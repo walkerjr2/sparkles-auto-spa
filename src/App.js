@@ -190,7 +190,9 @@ const App = () => {
   function toTimeString(minutes) {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    const hour12 = h % 12 === 0 ? 12 : h % 12;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    return `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
   }
   function getAvailableSlots(dateStr) {
     if (!dateStr) return [];
