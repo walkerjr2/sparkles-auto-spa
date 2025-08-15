@@ -37,6 +37,8 @@ const App = () => {
   const [showModal, setShowModal] = useState(false);
   const [manualLocation, setManualLocation] = useState(false);
 
+  const MAINTENANCE_MODE = true; // Set to true to enable maintenance page
+
   const navigateTo = (page) => {
     setCurrentPage(page);
     setBookingStep(1); // Reset booking form when navigating
@@ -242,7 +244,7 @@ const App = () => {
                 {/* Logo Image */}
                 <img src={logo} alt="Logo" className="h-20 sm:h-32 mx-auto my-4" />
                 <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-sparkle-blue mb-4">
-                  Experience the Ultimate Shine
+                  Experience the Difference
                 </h1>
                 <p className="mt-4 md:mt-6 text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
                   At Sparkles Auto Spa, we bring the ultimate professional car care to your doorstep. Our team of experts ensures your vehicle sparkles like new.
@@ -573,6 +575,21 @@ const App = () => {
         return null;
     }
   };
+
+  if (MAINTENANCE_MODE) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
+        <div className="bg-white bg-opacity-90 backdrop-blur-lg p-8 rounded-2xl shadow-2xl text-center max-w-md mx-auto">
+          <img src={logo} alt="Logo" className="h-20 mx-auto mb-6" />
+          <h1 className="text-3xl font-bold text-sparkle-blue mb-4">Site Under Maintenance</h1>
+          <p className="text-gray-700 mb-6">
+            Sparkles Auto Spa is currently undergoing scheduled maintenance.<br />
+            Please check back soon!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
