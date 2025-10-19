@@ -725,14 +725,14 @@ const App = () => {
             <div className="relative z-10 w-full">
               {/* Promo Tag */}
               {currentPage === 'home' && (
-                <div className="flex justify-center w-full z-40 relative px-4" style={{marginTop: 0}}>
+                <div className="flex justify-center w-full z-40 relative px-4 md:px-0" style={{marginTop: 0}}>
                   <button
-                    className="animate-wind bg-gradient-to-r from-[#6fff3e] via-[#19c2ff] to-[#f6ff6b] rounded-2xl shadow-2xl px-3 sm:px-4 md:px-8 py-2 sm:py-3 md:py-4 font-bold text-sm sm:text-lg md:text-2xl text-white flex items-center justify-center promo-mobile hover:scale-105 transition-transform focus:outline-none focus:ring-4 focus:ring-sparkle-blue"
+                    className="animate-wind bg-gradient-to-r from-[#6fff3e] via-[#19c2ff] to-[#f6ff6b] rounded-2xl shadow-2xl px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 font-bold text-sm sm:text-xl md:text-2xl text-white flex items-center justify-center promo-mobile hover:scale-105 transition-transform focus:outline-none focus:ring-4 focus:ring-sparkle-blue"
                     style={{
                       filter: 'drop-shadow(0 6px 0 #19c2ff)',
                       minWidth: '280px',
                       maxWidth: '90vw',
-                      width: '100%',
+                      width: 'auto',
                       marginLeft: 'auto',
                       marginRight: 'auto',
                       marginTop: '-5.25rem',
@@ -744,29 +744,29 @@ const App = () => {
                     onClick={() => setShowPromo(true)}
                     aria-label="View Promotion"
                   >
-                    <span role="img" aria-label="party" className="text-base sm:text-xl">🎉</span>
+                    <span role="img" aria-label="party" className="text-base sm:text-xl md:text-2xl">🎉</span>
                     <span className="ml-1 sm:ml-2 text-center flex-1">
                       <span className="text-yellow-300">New Promotion:</span>{' '}
                       <span className="font-extrabold">Refer &amp; Save Big!</span>
                     </span>
-                    <span className="ml-1 sm:ml-2 text-base sm:text-xl" role="img" aria-label="party">🎉</span>
+                    <span className="ml-1 sm:ml-2 text-base sm:text-xl md:text-2xl" role="img" aria-label="party">🎉</span>
                   </button>
                 </div>
               )}
               {/* Hero Section */}
-              <div className="w-full min-h-screen flex flex-col items-center justify-center text-center p-4 sm:p-8">
+              <div className="w-full min-h-screen flex flex-col items-center justify-center text-center p-4 sm:p-6 md:p-8">
                 {/* Logo Image */}
-                <img src={logo} alt="Logo" className="h-12 sm:h-14 md:h-20 mx-auto my-4 object-contain" style={{maxWidth: '180px', width: 'auto'}} />
-                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight px-4" style={{textShadow: '0 2px 8px rgba(0,0,0,0.12)'}}>Experience the Difference</h1>
+                <img src={logo} alt="Logo" className="h-12 sm:h-16 md:h-20 mx-auto my-4 object-contain" style={{maxWidth: '200px', width: 'auto'}} />
+                <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight px-4" style={{textShadow: '0 2px 8px rgba(0,0,0,0.12)'}}>Experience the Difference</h1>
                 {/* Book Now Button */}
-                <div className="flex flex-col items-center mb-4 sm:mb-6 w-full px-4">
+                <div className="flex flex-col items-center mb-4 sm:mb-6 w-full px-4 md:px-0">
                   <button
                     onClick={() => navigateTo('book')}
-                    className="mb-4 sm:mb-6 px-8 sm:px-10 py-3 sm:py-4 bg-sparkle-blue text-white font-bold text-base sm:text-lg md:text-xl rounded-full shadow-lg hover:bg-sparkle-blue-dark transition-colors book-btn-mobile w-full sm:w-auto"
-                    style={{maxWidth: '300px'}}>
+                    className="mb-4 sm:mb-6 px-8 sm:px-10 md:px-12 py-3 sm:py-4 bg-sparkle-blue text-white font-bold text-base sm:text-lg md:text-xl rounded-full shadow-lg hover:bg-sparkle-blue-dark transition-colors book-btn-mobile w-full sm:w-auto"
+                    style={{maxWidth: '300px', minWidth: '200px'}}>
                     Book Now
                   </button>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 w-full sm:w-auto" style={{maxWidth: '400px'}}>
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 w-full sm:w-auto">
                     <button onClick={() => navigateTo('services')} className="px-6 sm:px-8 py-2 sm:py-3 bg-white bg-opacity-90 text-sparkle-blue font-semibold text-sm sm:text-base rounded-full shadow hover:bg-sparkle-blue hover:text-white transition-colors">Services</button>
                     <button onClick={() => navigateTo('team')} className="px-6 sm:px-8 py-2 sm:py-3 bg-white bg-opacity-90 text-sparkle-blue font-semibold text-sm sm:text-base rounded-full shadow hover:bg-sparkle-blue hover:text-white transition-colors">Team</button>
                     <button onClick={() => navigateTo('contact')} className="px-6 sm:px-8 py-2 sm:py-3 bg-white bg-opacity-90 text-sparkle-blue font-semibold text-sm sm:text-base rounded-full shadow hover:bg-sparkle-blue hover:text-white transition-colors">Contact</button>
@@ -1836,26 +1836,26 @@ const App = () => {
             .min-h-screen {
               min-height: 100vh !important;
             }
-            .promo-mobile {
-              min-width: 200px !important;
-              max-width: 90vw !important;
-              font-size: 0.85rem !important;
-              padding: 0.6rem 0.5rem !important;
-              margin-left: 5vw !important;
-              margin-right: 5vw !important;
-            }
-            .promo-mobile span {
-              font-size: 0.9em !important;
-            }
-            .back-btn-mobile {
-              min-width: 70px !important;
-              font-size: 0.95rem !important;
-              padding: 0.4rem 0.7rem !important;
-            }
-            .book-btn-mobile {
-              min-width: 120px !important;
-              font-size: 1rem !important;
-              padding: 0.6rem 0.8rem !important;
+            @media (max-width: 640px) {
+              .promo-mobile {
+                min-width: 200px !important;
+                max-width: 90vw !important;
+                font-size: 0.85rem !important;
+                padding: 0.6rem 0.5rem !important;
+              }
+              .promo-mobile span {
+                font-size: 0.9em !important;
+              }
+              .back-btn-mobile {
+                min-width: 70px !important;
+                font-size: 0.95rem !important;
+                padding: 0.4rem 0.7rem !important;
+              }
+              .book-btn-mobile {
+                min-width: 120px !important;
+                font-size: 1rem !important;
+                padding: 0.6rem 0.8rem !important;
+              }
             }
           }
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
