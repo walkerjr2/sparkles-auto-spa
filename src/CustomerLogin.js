@@ -21,11 +21,25 @@ const CustomerLogin = () => {
 
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
     try {
       await signInWithPopup(auth, provider);
       navigate('/'); // Go to home page after login
     } catch (error) {
-      alert("Google sign-in failed. Please try again.");
+      console.error("Login error:", error);
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        alert("Sign-in cancelled. Please try again.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        alert("This domain is not authorized. Please contact support.");
+      } else if (error.code === 'auth/popup-blocked') {
+        alert("Popup was blocked. Please allow popups for this site and try again.");
+      } else {
+        alert("Google sign-in failed: " + error.message);
+      }
     }
   };
 
