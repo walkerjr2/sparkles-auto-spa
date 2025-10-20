@@ -1513,7 +1513,7 @@ const App = () => {
                     </p>
                     <button
                       onClick={closeModalAndNavigateHome}
-                      className="px-6 py-3 bg-sparkle-green text-white font-semibold rounded-full hover:bg-sparkle-green-dark transition-colors"
+                      className="px-6 py-3 bg-sparkle-blue text-white font-semibold rounded-full hover:bg-sparkle-blue-dark transition-colors"
                     >
                       Back to Home
                     </button>
@@ -1549,7 +1549,7 @@ const App = () => {
                     </svg>
                   </div>
                   <h3 className="text-xl font-bold text-gray-800 text-center mb-2">Call Us</h3>
-                  <p className="text-2xl font-bold text-sparkle-green text-center">876-471-6676</p>
+                  <p className="text-2xl font-bold text-sparkle-blue text-center">876-471-6676</p>
                   <p className="text-sm text-gray-600 text-center mt-2">Available during service hours</p>
                 </a>
 
@@ -1572,7 +1572,7 @@ const App = () => {
 
                 {/* Email Card */}
                 <a 
-                  href="mailto:jrcosroy.walker@gmail.com"
+                  href="mailto:sparklesautospa01@gmail.com"
                   className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-400 transition-all hover:scale-105 shadow-lg"
                 >
                   <div className="w-14 h-14 bg-sparkle-blue rounded-full flex items-center justify-center mb-4 mx-auto">
@@ -1582,7 +1582,7 @@ const App = () => {
                     </svg>
                   </div>
                   <h3 className="text-xl font-bold text-gray-800 text-center mb-2">Email Us</h3>
-                  <p className="text-sm text-gray-700 text-center break-all">jrcosroy.walker@gmail.com</p>
+                  <p className="text-sm text-gray-700 text-center break-all">sparklesautospa01@gmail.com</p>
                   <p className="text-sm text-gray-600 text-center mt-2">24-48 hour response time</p>
                 </a>
               </div>
@@ -1679,7 +1679,7 @@ const App = () => {
                 </h2>
                 
                 <div className="space-y-4 max-w-3xl mx-auto">
-                  {[
+                  {[ 
                     {
                       q: "What areas do you service?",
                       a: "We service Montego Bay and surrounding areas within 15km. Contact us to confirm if we serve your location!"
@@ -1690,7 +1690,7 @@ const App = () => {
                     },
                     {
                       q: "What payment methods do you accept?",
-                      a: "We accept cash and mobile payments (Bpay, JamDex, etc.). Payment is due after service completion."
+                      a: "We accept bank transfer and cash. Payment is due after service completion."
                     },
                     {
                       q: "How long does a typical wash take?",
@@ -1698,7 +1698,7 @@ const App = () => {
                     },
                     {
                       q: "Do I need to be present during the service?",
-                      a: "Yes, we recommend being present during the service. Our drivers come fully equipped with all necessary supplies including water and power, so you don't need to provide anything!"
+                      a: "While it's not strictly necessary for you to be present, we recommend that someone is available to provide access and discuss any specific requirements. If you can't be there, please let us know in advance so we can make suitable arrangements."
                     },
                     {
                       q: "Can I cancel or reschedule?",

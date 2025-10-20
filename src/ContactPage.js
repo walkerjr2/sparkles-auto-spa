@@ -50,10 +50,10 @@ const ContactPage = () => {
             876-471-6676
           </a>
           <a
-            href="mailto:info@sparklesautospa.com"
+            href="mailto:sparklesautospa01@gmail.com"
             className="text-lg text-sparkle-blue hover:underline font-semibold"
           >
-            info@sparklesautospa.com
+            sparklesautospa01@gmail.com
           </a>
           <div className="flex gap-4 mt-2">
             <a
