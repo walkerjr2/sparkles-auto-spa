@@ -803,9 +803,9 @@ const App = () => {
                       <div className="bg-white rounded-2xl shadow-md border-4 border-white p-3 flex flex-col items-center">
                         <video 
                           controls 
-                          preload="metadata"
+                          preload="auto"
                           playsInline
-                          className="rounded-xl object-cover w-full h-44 mb-3" 
+                          className="rounded-xl object-cover w-full h-44 mb-3 bg-gray-200" 
                           style={{maxWidth:'100%'}}
                         >
                           <source src={require('./assets/client2.mp4')} type="video/mp4" />
@@ -967,12 +967,12 @@ const App = () => {
                         {vehicleImage ? (
                           // Card with vehicle image
                           <div className="flex flex-col h-full">
-                            <div className="relative bg-gradient-to-br from-blue-50 to-gray-100 p-2 md:p-4 h-40 md:h-48 flex items-center justify-center overflow-hidden group">
+                            <div className="relative bg-gradient-to-br from-blue-50 to-gray-100 p-4 md:p-5 h-56 md:h-60 flex items-center justify-center overflow-hidden group">
                               <img 
                                 src={vehicleImage} 
                                 alt={service.name}
-                                className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110"
-                                style={service.name.includes('Bus') ? {transform: 'scale(2.5)'} : {transform: 'scale(1.3)'}}
+                                className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-110"
+                                style={service.name.includes('Bus') ? {transform: 'scale(2.3)'} : service.name.includes('Seat Only Detail') ? {transform: 'scale(1.1)'} : service.name.includes('Trailer Front & Back') ? {transform: 'scale(1.2)'} : {transform: 'scale(1.3)'}}
                               />
                             </div>
                             <div className="p-6 flex-1 flex flex-col">
