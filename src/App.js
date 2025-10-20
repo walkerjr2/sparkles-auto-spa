@@ -492,7 +492,7 @@ const App = () => {
     },
     {
       id: 'large-bus',
-      name: 'Large Bus',
+  name: 'Large Bus / Pickup',
       examples: 'Hiace, Large Pickup',
       image: require('./assets/large bus.png'),
       services: ['Wash and Vac (Large Bus)']
@@ -727,7 +727,7 @@ const App = () => {
               {currentPage === 'home' && (
                 <div className="flex justify-center w-full z-40 px-4 md:px-0 mt-4">
                   <button
-                    className="animate-wind bg-gradient-to-r from-[#6fff3e] via-[#19c2ff] to-[#f6ff6b] rounded-2xl shadow-2xl px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 font-bold text-sm sm:text-xl md:text-2xl text-white flex items-center justify-center promo-mobile hover:scale-105 transition-transform focus:outline-none focus:ring-4 focus:ring-sparkle-blue"
+                    className="animate-wind rounded-2xl shadow-2xl px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 font-bold text-sm sm:text-xl md:text-2xl text-white flex items-center justify-center promo-mobile hover:scale-105 transition-transform focus:outline-none focus:ring-4 focus:ring-sparkle-blue"
                     style={{
                       filter: 'drop-shadow(0 6px 0 #19c2ff)',
                       minWidth: '280px',
@@ -735,7 +735,7 @@ const App = () => {
                       width: 'auto',
                       marginLeft: 'auto',
                       marginRight: 'auto',
-                      background: 'linear-gradient(90deg, #6fff3e 0%, #19c2ff 60%, #f6ff6b 100%)',
+                      background: 'linear-gradient(90deg, #3a8dde 0%, #19c2ff 100%)',
                       color: '#fff',
                       textShadow: '0 2px 8px rgba(0,0,0,0.10)',
                       cursor: 'pointer',
@@ -755,7 +755,7 @@ const App = () => {
               {/* Hero Section */}
               <div className="w-full min-h-screen flex flex-col items-center justify-center text-center p-4 sm:p-6 md:p-8">
                 {/* Logo Image */}
-                <img src={logo} alt="Logo" className="h-12 sm:h-16 md:h-20 mx-auto my-4 object-contain" style={{maxWidth: '200px', width: 'auto'}} />
+                <img src={logo} alt="Logo" className="h-24 sm:h-20 md:h-24 mx-auto my-4 object-contain" style={{maxWidth: '260px', width: 'auto'}} />
                 <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight px-4" style={{textShadow: '0 2px 8px rgba(0,0,0,0.12)'}}>Experience the Difference</h1>
                 {/* Book Now Button */}
                 <div className="flex flex-col items-center mb-4 sm:mb-6 w-full px-4 md:px-0">
@@ -890,7 +890,8 @@ const App = () => {
                 <div className="w-full max-w-6xl bg-white bg-opacity-80 rounded-full p-12 md:p-16 text-center shadow-2xl">
                   <h2 className="text-2xl md:text-3xl font-extrabold mb-8 text-sparkle-blue tracking-tight" style={{letterSpacing:'-1px'}}>Our Popular Services</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {services[0].items.slice(0, 3).map(service => (
+                    {/* Replace first with a detailing service */}
+                    {[services[1].items[0], ...services[0].items.slice(1, 3)].map(service => (
                       <div key={service.id} className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200" style={{minHeight:'200px'}}>
                         <h3 className="text-base md:text-lg font-bold text-sparkle-blue mb-1">{service.name}</h3>
                         <p className="text-gray-500 text-sm md:text-base mb-4">{service.details.length > 0 ? service.details.join(', ') : 'Details vary by vehicle.'}</p>
@@ -1282,6 +1283,16 @@ const App = () => {
                       placeholder="Start typing your address..."
                       style={{ width: '100%', maxWidth: '100%' }}
                     />
+                    {/* Button to switch to manual location entry */}
+                    {!manualLocation && (
+                      <button
+                        type="button"
+                        onClick={() => setManualLocation(true)}
+                        className="mt-2 mb-4 px-4 py-2 bg-sparkle-blue text-white font-semibold rounded-full hover:bg-blue-600 transition-colors"
+                      >
+                        Enter Location Manually
+                      </button>
+                    )}
                     {/* Only render the map if not in manual location mode */}
                     {!manualLocation && (
                       <div className="my-6">
@@ -1350,7 +1361,7 @@ const App = () => {
                       <button
                         type="button"
                         onClick={() => setBookingStep(4)}
-                        disabled={!bookingDetails.location}
+                        disabled={bookingDetails.location.trim() === ''}
                         className="px-6 py-3 bg-sparkle-blue text-white font-semibold rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50"
                       >
                         Next

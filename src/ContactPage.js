@@ -41,7 +41,7 @@ const ContactPage = () => {
         </form>
         <div className="flex flex-col items-center gap-3 mt-2">
           <span className="text-gray-600 font-semibold text-base">
-            Or reach us directly:
+            Which areas do you service?
           </span>
           <a
             href="tel:876-471-6676"
