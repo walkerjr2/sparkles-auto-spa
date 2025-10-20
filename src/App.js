@@ -803,10 +803,14 @@ const App = () => {
                       <div className="bg-white rounded-2xl shadow-md border-4 border-white p-3 flex flex-col items-center">
                         <video 
                           controls 
-                          preload="auto"
+                          preload="metadata"
                           playsInline
+                          muted
                           className="rounded-xl object-cover w-full h-44 mb-3 bg-gray-200" 
                           style={{maxWidth:'100%'}}
+                          onLoadedMetadata={(e) => {
+                            e.target.currentTime = 0.1;
+                          }}
                         >
                           <source src={require('./assets/client2.mp4')} type="video/mp4" />
                           Your browser does not support the video tag.
