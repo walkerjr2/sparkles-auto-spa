@@ -926,7 +926,7 @@ const App = () => {
             'Wash and Vac (Small Truck)': require('./assets/small truck.png'),
             'Wash and Vac (Large Truck)': require('./assets/large truck.png'),
             'Wash and Vac (Trailer Head)': require('./assets/semi truck.png'),
-            'Wash and Vac (Trailer Front & Back)': require('./assets/semi back + front.png'),
+            'Wash and Vac (Trailer Front & Back)': require('./assets/trailer-front-and-back.png'),
             'Wash and Vac (Dumper Truck)': require('./assets/dumper truck.png'),
             'Wash and Vac (Tracker & Backhoe)': require('./assets/backhoe.png'),
             // Detailing Services
