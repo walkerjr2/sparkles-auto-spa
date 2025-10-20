@@ -972,7 +972,12 @@ const App = () => {
                                 src={vehicleImage} 
                                 alt={service.name}
                                 className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-110"
-                                style={service.name.includes('Bus') ? {transform: 'scale(2.3)'} : service.name.includes('Seat Only Detail') ? {transform: 'scale(1.1)'} : service.name.includes('Trailer Front & Back') ? {transform: 'scale(1.2)'} : {transform: 'scale(1.3)'}}
+                                style={
+                                  service.name.includes('Bus') ? {transform: 'scale(2.3)'} : 
+                                  service.name.includes('Seat Only Detail') ? {transform: 'scale(1.1)'} : 
+                                  service.name.includes('Trailer') ? {transform: 'scale(1.0)'} : 
+                                  {transform: 'scale(1.3)'}
+                                }
                               />
                             </div>
                             <div className="p-6 flex-1 flex flex-col">
