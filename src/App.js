@@ -801,7 +801,13 @@ const App = () => {
                       </div>
                       {/* Card 2: Video */}
                       <div className="bg-white rounded-2xl shadow-md border-4 border-white p-3 flex flex-col items-center">
-                        <video controls className="rounded-xl object-cover w-full h-44 mb-3" style={{maxWidth:'100%'}}>
+                        <video 
+                          controls 
+                          preload="metadata"
+                          playsInline
+                          className="rounded-xl object-cover w-full h-44 mb-3" 
+                          style={{maxWidth:'100%'}}
+                        >
                           <source src={require('./assets/client2.mp4')} type="video/mp4" />
                           Your browser does not support the video tag.
                         </video>
