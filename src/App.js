@@ -725,7 +725,7 @@ const App = () => {
             <div className="relative z-10 w-full">
               {/* Promo Tag */}
               {currentPage === 'home' && (
-                <div className="flex justify-center w-full z-40 relative px-4 md:px-0" style={{marginTop: 0}}>
+                <div className="flex justify-center w-full z-40 px-4 md:px-0 mt-4">
                   <button
                     className="animate-wind bg-gradient-to-r from-[#6fff3e] via-[#19c2ff] to-[#f6ff6b] rounded-2xl shadow-2xl px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 font-bold text-sm sm:text-xl md:text-2xl text-white flex items-center justify-center promo-mobile hover:scale-105 transition-transform focus:outline-none focus:ring-4 focus:ring-sparkle-blue"
                     style={{
@@ -735,7 +735,6 @@ const App = () => {
                       width: 'auto',
                       marginLeft: 'auto',
                       marginRight: 'auto',
-                      marginTop: '-5.25rem',
                       background: 'linear-gradient(90deg, #6fff3e 0%, #19c2ff 60%, #f6ff6b 100%)',
                       color: '#fff',
                       textShadow: '0 2px 8px rgba(0,0,0,0.10)',
