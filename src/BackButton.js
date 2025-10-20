@@ -4,7 +4,7 @@ export default function BackButton({ onClick }) {
   return (
     <button
       onClick={onClick}
-      className="fixed top-16 md:top-32 left-4 z-[9999] flex items-center px-4 py-2 bg-sparkle-blue text-white rounded-full shadow-lg border-2 border-sparkle-blue hover:bg-sparkle-blue-dark transition-colors text-base md:text-lg font-bold"
+  className="fixed top-24 md:top-32 left-4 z-[9999] flex items-center px-4 py-2 bg-sparkle-blue text-white rounded-full shadow-lg border-2 border-sparkle-blue hover:bg-sparkle-blue-dark transition-colors text-base md:text-lg font-bold"
       style={{ minWidth: 44, minHeight: 44 }}
       aria-label="Go back"
     >

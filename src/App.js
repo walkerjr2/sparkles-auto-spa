@@ -755,7 +755,7 @@ const App = () => {
               {/* Hero Section */}
               <div className="w-full min-h-screen flex flex-col items-center justify-center text-center p-4 sm:p-6 md:p-8">
                 {/* Logo Image */}
-                <img src={logo} alt="Logo" className="h-24 sm:h-20 md:h-24 mx-auto my-4 object-contain" style={{maxWidth: '260px', width: 'auto'}} />
+                <img src={logo} alt="Logo" className="h-24 sm:h-20 md:h-24 mx-auto my-4 object-contain mt-16 sm:mt-4" style={{maxWidth: '260px', width: 'auto'}} />
                 <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight px-4" style={{textShadow: '0 2px 8px rgba(0,0,0,0.12)'}}>Experience the Difference</h1>
                 {/* Book Now Button */}
                 <div className="flex flex-col items-center mb-4 sm:mb-6 w-full px-4 md:px-0">
