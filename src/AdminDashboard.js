@@ -14,6 +14,7 @@ export default function AdminDashboard() {
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [showMonthlySummary, setShowMonthlySummary] = useState(false);
+  const [priceEdits, setPriceEdits] = useState({});
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: 'AIzaSyDcVN1C_ZFgn1smrKc5TyWQPraFZk4rJas',
@@ -65,6 +66,20 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error updating booking:', error);
       alert('Failed to update booking status');
+    }
+  };
+
+  // Update booking price
+  const updateBookingPrice = async (bookingId, newPrice) => {
+    try {
+      await updateDoc(doc(db, 'bookings', bookingId), {
+        price: Number(newPrice),
+        updatedAt: new Date(),
+      });
+      alert('Price updated!');
+    } catch (error) {
+      console.error('Error updating price:', error);
+      alert('Failed to update price');
     }
   };
 
@@ -236,7 +251,6 @@ export default function AdminDashboard() {
                 className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sparkle-blue"
               />
             </div>
-
             {/* Monthly Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-300">
@@ -294,7 +308,7 @@ export default function AdminDashboard() {
                     ))}
                   {Object.keys(monthlySummary.serviceStats).length === 0 && (
                     <tr>
-                      <td colspan="7" className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
                         No bookings found for this month
                       </td>
                     </tr>
@@ -366,12 +380,15 @@ export default function AdminDashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredBookings.map((booking) => {
+                    // For price editing
+                    const priceValue = priceEdits[booking.id] !== undefined ? priceEdits[booking.id] : (booking.price !== undefined ? booking.price : servicePricing[booking.service] || 0);
                     const statusColors = {
                       pending: 'bg-yellow-100 text-yellow-800',
                       confirmed: 'bg-green-100 text-green-800',
@@ -417,6 +434,24 @@ export default function AdminDashboard() {
                           }`}>
                             {booking.paymentMethod || 'Not Selected'}
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min="0"
+                              className="w-24 p-1 border border-gray-300 rounded text-sm"
+                              value={priceValue}
+                              onChange={e => setPriceEdits({ ...priceEdits, [booking.id]: e.target.value })}
+                            />
+                            <button
+                              className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition-colors"
+                              onClick={() => updateBookingPrice(booking.id, priceEdits[booking.id] !== undefined ? priceEdits[booking.id] : priceValue)}
+                              disabled={Number(priceValue) === Number(booking.price)}
+                            >
+                              Save
+                            </button>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 text-xs font-semibold rounded-full ${statusColors[booking.status || 'pending']}`}>
