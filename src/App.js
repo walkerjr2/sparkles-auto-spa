@@ -338,7 +338,7 @@ const App = () => {
       await emailjs.send(
         'service_wamhblr',
         'template_kvbn3sg',
-        { ...templateParams, to_email: 'jrcosroy.walker@gmail.com' },
+        { ...templateParams, to_email: 'sparklesautospa01@gmail.com' },
         '45y0OsA7oxKrQg63X'
       );
 
@@ -390,13 +390,13 @@ const App = () => {
         bookingId: bookingId,
       };
 
-      // Notify business
+    // Notify business
       await emailjs.send(
         'service_wamhblr',
         'template_kvbn3sg',
         { 
           ...templateParams, 
-          to_email: 'jrcosroy.walker@gmail.com',
+      to_email: 'sparklesautospa01@gmail.com',
           message: `CANCELLATION: ${templateParams.name} has cancelled their booking.`
         },
         '45y0OsA7oxKrQg63X'
@@ -417,14 +417,14 @@ const App = () => {
     setFormSubmitting(true);
     
     try {
-      await emailjs.send(
+    await emailjs.send(
         'service_wamhblr',
         'template_kvbn3sg', // Using existing business template
         {
           from_name: contactForm.name,
           from_email: contactForm.email,
           message: contactForm.message,
-          to_email: 'jrcosroy.walker@gmail.com',
+      to_email: 'sparklesautospa01@gmail.com',
           service: 'Contact Form Inquiry',
           actionMessage: `New message from ${contactForm.name} via contact form`,
           name: contactForm.name,
