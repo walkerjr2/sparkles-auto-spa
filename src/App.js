@@ -582,16 +582,22 @@ const App = () => {
   const workerSchedules = [
     {
       name: 'Nick',
-      start: '06:00',
-      end: '15:00',
+  start: '06:30',
+  end: '14:00',
       interval: 90, // minutes
       dayOff: 1, // Monday (0=Sunday, 1=Monday, ...)
+      // Per-day overrides
+      overrides: {
+        // Sunday schedule: 7:00 AM – 2:30 PM
+        0: { start: '07:00', end: '14:30', interval: 90 },
+      },
     },
     {
       name: 'Antony',
       start: '07:30',
       end: '16:00',
       interval: 90,
+  lastSlotInclusive: true,
       lunch: { start: '12:00', end: '13:00' },
       dayOff: 2, // Tuesday
     },
@@ -600,14 +606,17 @@ const App = () => {
       start: '06:30',
       end: '16:30',
       interval: 120,
+  lastSlotInclusive: true, // include a 4:30 PM start
       dayOff: 3, // Wednesday
     },
     {
       name: 'Radcliffe',
-      start: '07:30',
-      end: '16:30',
-      interval: 90,
-      dayOff: 4, // Thursday
+  start: '06:30',
+  end: '14:30',
+  interval: 90,
+  dayOff: 1, // Monday
+  // Exact slots requested for remaining days
+  customSlots: ['06:30', '08:30', '10:00', '11:30', '13:00', '14:30'],
     },
   ];
 
@@ -628,6 +637,15 @@ const App = () => {
     const [h, m] = timeStr.split(':').map(Number);
     return h * 60 + m;
   }
+  // Parse a YYYY-MM-DD date string in local time to avoid timezone shifts
+  function getLocalDayOfWeek(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return new Date(dateStr).getDay(); // fallback
+    const [y, m, d] = parts.map(Number);
+    const localDate = new Date(y, (m || 1) - 1, d || 1);
+    return localDate.getDay(); // 0=Sun ... 6=Sat in local timezone
+  }
   function toTimeString(minutes) {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
@@ -637,8 +655,7 @@ const App = () => {
   }
   function getAvailableSlots(dateStr) {
     if (!dateStr) return [];
-    const date = new Date(dateStr);
-    const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, ...
+    const dayOfWeek = getLocalDayOfWeek(dateStr); // 0=Sunday, 1=Monday, ...
     const slots = [];
 
     // Check if the selected service is a detailing service
@@ -658,17 +675,42 @@ const App = () => {
     const isDetailingService = detailingServices.includes(bookingDetails.service);
 
     workerSchedules.forEach(worker => {
-      if (worker.dayOff === dayOfWeek) return; // Skip if day off
+      // Skip if day off or hard rule: Nick is off on Mondays (1)
+      if (worker.dayOff === dayOfWeek || (worker.name === 'Nick' && dayOfWeek === 1)) return;
       
       // Only Nick and Antony can do detailing services
       if (isDetailingService && worker.name !== 'Nick' && worker.name !== 'Antony') {
         return; // Skip workers who can't do detailing
       }
 
-      let start = toMinutes(worker.start);
-      let end = toMinutes(worker.end);
+  // Apply per-day overrides if provided
+  const override = worker.overrides ? worker.overrides[dayOfWeek] : undefined;
+  const effectiveStart = override?.start || worker.start;
+  const effectiveEnd = override?.end || worker.end;
+  const effectiveInterval = override?.interval || worker.interval;
 
-      while (start + worker.interval <= end) {
+      const hasCustomSlots = Array.isArray(worker.customSlots) && worker.customSlots.length > 0;
+      let start = toMinutes(effectiveStart);
+      let end = toMinutes(effectiveEnd);
+
+      const allowInclusiveEnd = !!worker.lastSlotInclusive;
+      const pushSlot = (slotStartMinutes) => {
+        const timeString = toTimeString(slotStartMinutes);
+        const isBooked = bookedSlots.some(booking => {
+          const isActiveStatus = !booking.status || booking.status === 'pending' || booking.status === 'confirmed';
+          return booking.date === dateStr && booking.time.includes(timeString) && booking.worker === worker.name && isActiveStatus;
+        });
+        if (!isBooked) slots.push({ time: timeString, worker: worker.name });
+      };
+
+      if (hasCustomSlots) {
+        // Use explicit slots within the working window
+        worker.customSlots.forEach(ts => {
+          const sm = toMinutes(ts);
+          if (sm >= start && sm <= end) pushSlot(sm);
+        });
+      } else {
+        while ((allowInclusiveEnd ? start <= end : start + effectiveInterval <= end)) {
         // Skip lunch for Antony
         if (worker.lunch) {
           const lunchStart = toMinutes(worker.lunch.start);
@@ -678,29 +720,10 @@ const App = () => {
             continue;
           }
         }
-
-        const timeString = toTimeString(start);
-        
-        // Check if slot is already booked (real-time) - only active bookings
-        const isBooked = bookedSlots.some(
-          booking => {
-            // Only check bookings on the same date with active status
-            const isActiveStatus = !booking.status || booking.status === 'pending' || booking.status === 'confirmed';
-            return booking.date === dateStr && 
-                   booking.time.includes(timeString) && 
-                   booking.worker === worker.name &&
-                   isActiveStatus;
-          }
-        );
-
-        if (!isBooked) {
-          slots.push({
-            time: timeString,
-            worker: worker.name,
-          });
+          pushSlot(start);
+          start += effectiveInterval;
+          if (allowInclusiveEnd && start > end + effectiveInterval) break;
         }
-
-        start += worker.interval;
       }
     });
 
