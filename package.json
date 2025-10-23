@@ -1,5 +1,6 @@
 {
   "name": "sparkles-auto-spa",
+  "description": "Sparkles Auto Spa — Mobile car wash & detailing in Montego Bay, Jamaica. Book online.",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

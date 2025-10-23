@@ -4,17 +4,46 @@
     <meta charset="utf-8" />
   <link rel="icon" href="%PUBLIC_URL%/newlogo.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#2196f3" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Sparkles Auto Spa is Jamaica’s premium mobile car wash and detailing service in Montego Bay. Book wash & vac, interior detailing, engine wash, polishing and more—conveniently at your home or office."
     />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/newlogo.png" />
+  <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-icon-180x180.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
-    <link rel="manifest" href="%PUBLIC_URL%/newlogo.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Sparkles Auto Spa | Mobile Car Wash & Detailing" />
+    <meta property="og:description" content="Premium mobile auto spa in Montego Bay. Fast, professional wash & vac, interior detailing, polishing, engine wash and more." />
+    <meta property="og:image" content="%PUBLIC_URL%/newlogo.png" />
+    <meta property="og:image:alt" content="Sparkles Auto Spa logo" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Sparkles Auto Spa | Mobile Car Wash & Detailing" />
+    <meta name="twitter:description" content="Premium mobile car care in Montego Bay. Book online in minutes." />
+    <meta name="twitter:image" content="%PUBLIC_URL%/newlogo.png" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "AutoWash",
+      "name": "Sparkles Auto Spa",
+      "image": "%PUBLIC_URL%/newlogo.png",
+      "telephone": "+1-876-471-6676",
+      "areaServed": "Montego Bay, Jamaica",
+      "description": "Mobile car wash and detailing. Wash & vac, interior detailing, engine wash, polishing and more.",
+      "sameAs": [
+        "https://wa.me/18764716676"
+      ]
+    }
+    </script>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -24,7 +53,7 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-  <title>Sparkles Auto Spa</title>
+  <title>Sparkles Auto Spa | Mobile Car Wash & Detailing in Montego Bay, Jamaica</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
