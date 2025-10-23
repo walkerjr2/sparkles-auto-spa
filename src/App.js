@@ -492,10 +492,17 @@ const App = () => {
     },
     {
       id: 'large-bus',
-  name: 'Large Bus / Pickup',
-      examples: 'Hiace, Large Pickup',
+      name: 'Large Bus',
+      examples: 'Hiace',
       image: require('./assets/large bus.png'),
       services: ['Wash and Vac (Large Bus)']
+    },
+    {
+      id: 'pickup',
+      name: 'Pickup',
+      examples: 'Light & Large Pickup',
+      image: require('./assets/pickup.png'),
+      services: ['Wash and Vac (Pickup)']
     },
     {
       id: 'extra-large-bus',
@@ -532,6 +539,7 @@ const App = () => {
         { id: 5, name: 'Wash and Vac (Large SUV)', price: '$3,500', details: ['Vehicles like Prado, Land Cruiser'] },
         { id: 6, name: 'Wash and Vac (Small Bus)', price: '$3,500', details: ['Vehicles like Voxy, Minivan, Pick up'] },
         { id: 7, name: 'Wash and Vac (Large Bus)', price: '$4,500', details: ['Vehicles like Large Hiace, Large Pick up'] },
+  { id: 31, name: 'Wash and Vac (Pickup)', price: 'Starts at $4,000', details: ['Price varies by pickup size'] },
         { id: 8, name: 'Wash and Vac (Extra Large Bus)', price: '$5,000', details: ['Vehicles like Coaster'] },
         { id: 9, name: 'Wash and Vac (Small Truck)', price: '$6,000', details: ['Vehicles like Elf, Isuzu'] },
         { id: 9, name: 'Wash and Vac (Large Truck)', price: '$7,000', details: ['Vehicles like Isuzu'] },
@@ -758,7 +766,7 @@ const App = () => {
                       width: 'auto',
                       marginLeft: 'auto',
                       marginRight: 'auto',
-                      background: 'linear-gradient(90deg, #3a8dde 0%, #19c2ff 100%)',
+                      background: 'linear-gradient(90deg, #3a8dde 0%, #bff7c5 60%, #19c2ff 100%)',
                       color: '#fff',
                       textShadow: '0 2px 8px rgba(0,0,0,0.10)',
                       cursor: 'pointer',
@@ -920,8 +928,26 @@ const App = () => {
                         <p className="text-gray-500 text-sm md:text-base mb-4">{service.details.length > 0 ? service.details.join(', ') : 'Details vary by vehicle.'}</p>
                         <button
                           onClick={() => {
-                            setBookingDetails(prev => ({ ...prev, service: service.name }));
+                            // Map service to vehicle size (if a Wash & Vac sized service)
+                            const match = vehicleSizes.find(v => Array.isArray(v.services) && v.services.includes(service.name));
+                            if (match) {
+                              // Preselect vehicle size and service, then skip to Step 2
+                              setSelectedVehicleSize(match.id);
+                              setBookingDetails(prev => ({ ...prev, service: service.name, vehicleSize: match.name }));
+                            } else {
+                              // Detailing / Specialty services don’t need vehicle size
+                              setSelectedVehicleSize('');
+                              setBookingDetails(prev => ({ ...prev, service: service.name, vehicleSize: 'N/A' }));
+                            }
+                            setBookingStep(2);
                             navigateTo('book');
+                            // Scroll to top immediately for better UX
+                            try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) { /* noop */ }
+                            setTimeout(() => {
+                              if (bookingFormRef.current) {
+                                bookingFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }, 100);
                           }}
                           className="px-6 py-2 bg-sparkle-blue text-white font-bold text-base rounded-full shadow-lg hover:bg-sparkle-blue-dark transition-colors book-btn-mobile"
                           style={{minWidth: '110px', fontSize: '1rem'}}
@@ -950,6 +976,7 @@ const App = () => {
             'Wash and Vac (Small Bus)': require('./assets/small bus.png'),
             'Wash and Vac (Large Bus)': require('./assets/large bus.png'),
             'Wash and Vac (Extra Large Bus)': require('./assets/extra large bus.png'),
+            'Wash and Vac (Pickup)': require('./assets/pickup.png'),
             'Wash and Vac (Small Truck)': require('./assets/small truck.png'),
             'Wash and Vac (Large Truck)': require('./assets/large truck.png'),
             'Wash and Vac (Trailer Head)': require('./assets/semi truck.png'),
@@ -1021,9 +1048,17 @@ const App = () => {
                               )}
                               <button
                                 onClick={() => {
-                                  setBookingDetails(prev => ({ ...prev, service: service.name, vehicleSize: 'N/A' }));
+                                  const match = vehicleSizes.find(v => Array.isArray(v.services) && v.services.includes(service.name));
+                                  if (match) {
+                                    setSelectedVehicleSize(match.id);
+                                    setBookingDetails(prev => ({ ...prev, service: service.name, vehicleSize: match.name }));
+                                  } else {
+                                    setSelectedVehicleSize('');
+                                    setBookingDetails(prev => ({ ...prev, service: service.name, vehicleSize: 'N/A' }));
+                                  }
                                   setBookingStep(2);
                                   navigateTo('book');
+                                  try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) { /* noop */ }
                                   setTimeout(() => {
                                     if (bookingFormRef.current) {
                                       bookingFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1065,9 +1100,17 @@ const App = () => {
                             )}
                             <button
                               onClick={() => {
-                                setBookingDetails(prev => ({ ...prev, service: service.name, vehicleSize: 'N/A' }));
+                                const match = vehicleSizes.find(v => Array.isArray(v.services) && v.services.includes(service.name));
+                                if (match) {
+                                  setSelectedVehicleSize(match.id);
+                                  setBookingDetails(prev => ({ ...prev, service: service.name, vehicleSize: match.name }));
+                                } else {
+                                  setSelectedVehicleSize('');
+                                  setBookingDetails(prev => ({ ...prev, service: service.name, vehicleSize: 'N/A' }));
+                                }
                                 setBookingStep(2);
                                 navigateTo('book');
+                                try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) { /* noop */ }
                                 setTimeout(() => {
                                   if (bookingFormRef.current) {
                                     bookingFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1159,7 +1202,7 @@ const App = () => {
                               style={['small-bus', 'large-bus', 'extra-large-bus'].includes(size.id) ? {transform: 'scale(2.5)'} : {transform: 'scale(1.3)'}}
                             />
                             {selectedVehicleSize === size.id && (
-                              <div className="absolute top-3 right-3 bg-sparkle-green text-white rounded-full p-2 shadow-lg animate-bounce">
+                              <div className="absolute top-3 right-3 bg-sparkle-blue text-white rounded-full p-2 shadow-lg animate-bounce">
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
@@ -1172,7 +1215,7 @@ const App = () => {
                               <span className="font-semibold">Examples:</span> {size.examples}
                             </p>
                             {selectedVehicleSize === size.id && (
-                              <div className="mt-2 px-3 py-1 bg-sparkle-green/10 text-sparkle-green rounded-full text-xs font-bold inline-block">
+                              <div className="mt-2 px-3 py-1 bg-sparkle-blue/10 text-sparkle-blue rounded-full text-xs font-bold inline-block">
                                 ✓ Selected
                               </div>
                             )}
@@ -1776,7 +1819,7 @@ const App = () => {
                   <li className="flex items-center gap-3"><span className="inline-block w-4 h-4 bg-[#b3e0ff] rounded-full"></span> 100% commitment to your satisfaction</li>
                 </ul>
                 <div className="w-full flex justify-center md:justify-start mt-8">
-                  <div className="bg-gradient-to-r from-[#b3e0ff] to-[#6fff3e] px-10 py-5 rounded-full shadow text-xl md:text-2xl font-bold text-[#2196f3] animate-wind border border-[#e0e7ef]" style={{background:'linear-gradient(90deg, #e3f0fa 0%, #e6ffe6 100%)', color:'#2196f3'}}>Experience the Sparkle Difference Today!</div>
+                  <div className="bg-gradient-to-r from-[#b3e0ff] via-[#d5f7db] to-[#d9f2ff] px-10 py-5 rounded-full shadow text-xl md:text-2xl font-bold text-[#2196f3] animate-wind border border-[#e0e7ef]" style={{background:'linear-gradient(90deg, #e3f0fa 0%, #eafbea 55%, #e6f7ff 100%)', color:'#2196f3'}}>Experience the Sparkle Difference Today!</div>
                 </div>
               </div>
               {/* Right: Premium Image Grid */}
@@ -1973,7 +2016,7 @@ const App = () => {
             <div
               className="min-h-screen text-gray-900 font-inter antialiased bg-cover bg-center"
               style={{
-                background: 'linear-gradient(120deg, #19c2ff 0%, #6fff3e 60%, #f6ff6b 100%)',
+                background: 'linear-gradient(120deg, #19c2ff 0%, #bff7c5 55%, #0ea5ff 80%, #e6f7ff 100%)',
                 minHeight: '100vh',
               }}
             >
@@ -2074,7 +2117,7 @@ const App = () => {
             <div
               className="min-h-screen text-gray-900 font-inter antialiased bg-cover bg-center"
               style={{
-                background: 'linear-gradient(120deg, #19c2ff 0%, #6fff3e 60%, #f6ff6b 100%)',
+                background: 'linear-gradient(120deg, #19c2ff 0%, #bff7c5 55%, #0ea5ff 80%, #e6f7ff 100%)',
                 minHeight: '100vh',
               }}
             >

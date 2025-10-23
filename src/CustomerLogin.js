@@ -44,7 +44,7 @@ const CustomerLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#19c2ff] via-[#6fff3e] to-[#f6ff6b] p-4">
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#19c2ff] via-[#bff7c5] to-[#e6f7ff] p-4">
       <div className="bg-white/95 rounded-[2.5rem] shadow-2xl p-0 max-w-lg w-full flex flex-col items-center border border-gray-100 animate-fade-in">
         {/* Header with logo and brand */}
         <div className="w-full flex flex-col items-center justify-center bg-gradient-to-r from-[#e3f0fa] to-[#e6ffe6] rounded-t-[2.5rem] p-8 border-b border-[#e0e7ef]">
