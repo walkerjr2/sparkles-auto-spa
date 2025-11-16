@@ -582,7 +582,6 @@ const App = () => {
   const workers = [
     { id: 1, name: 'Nick', bio: 'Expert detailer with 5 years of experience.', imageUrl: 'https://placehold.co/100x100/CCCCCC/666666?text=Nick' },
     { id: 2, name: 'Ricardo', bio: 'Passionate about cars and making them shine.', imageUrl: 'https://placehold.co/100x100/CCCCCC/666666?text=Ricardo' },
-    { id: 3, name: 'Antony', bio: 'Our fastest and most efficient team member.', imageUrl: 'https://placehold.co/100x100/CCCCCC/666666?text=Antony' },
     { id: 4, name: 'Radcliffe', bio: 'Dedicated to delivering top-notch service.', imageUrl: 'https://placehold.co/100x100/CCCCCC/666666?text=Radcliffe' },
   ];
 
@@ -599,15 +598,6 @@ const App = () => {
         // Sunday schedule: 7:00 AM – 2:30 PM
         0: { start: '07:00', end: '14:30', interval: 90 },
       },
-    },
-    {
-      name: 'Antony',
-      start: '07:30',
-      end: '16:00',
-      interval: 90,
-  lastSlotInclusive: true,
-      lunch: { start: '12:00', end: '13:00' },
-      dayOff: 2, // Tuesday
     },
     {
       name: 'Ricardo',
@@ -686,8 +676,8 @@ const App = () => {
       // Skip if day off or hard rule: Nick is off on Mondays (1)
       if (worker.dayOff === dayOfWeek || (worker.name === 'Nick' && dayOfWeek === 1)) return;
       
-      // Only Nick and Antony can do detailing services
-      if (isDetailingService && worker.name !== 'Nick' && worker.name !== 'Antony') {
+      // Only Nick can do detailing services
+      if (isDetailingService && worker.name !== 'Nick') {
         return; // Skip workers who can't do detailing
       }
 
@@ -719,7 +709,7 @@ const App = () => {
         });
       } else {
         while ((allowInclusiveEnd ? start <= end : start + effectiveInterval <= end)) {
-        // Skip lunch for Antony
+        // Skip lunch if defined
         if (worker.lunch) {
           const lunchStart = toMinutes(worker.lunch.start);
           const lunchEnd = toMinutes(worker.lunch.end);
