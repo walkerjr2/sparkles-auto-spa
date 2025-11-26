@@ -696,7 +696,9 @@ const App = () => {
         const timeString = toTimeString(slotStartMinutes);
         const isBooked = bookedSlots.some(booking => {
           const isActiveStatus = !booking.status || booking.status === 'pending' || booking.status === 'confirmed';
-          return booking.date === dateStr && booking.time.includes(timeString) && booking.worker === worker.name && isActiveStatus;
+          // Match exact time format: "10:00 AM (Nick)"
+          const bookingTimeString = `${timeString} (${worker.name})`;
+          return booking.date === dateStr && booking.time === bookingTimeString && isActiveStatus;
         });
         if (!isBooked) slots.push({ time: timeString, worker: worker.name });
       };
