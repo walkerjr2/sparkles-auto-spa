@@ -5,6 +5,7 @@ import CustomerLogin from './CustomerLogin';
 import CustomerDashboard from './CustomerDashboard';
 import PromoPage from './PromoPage';
 import AdminPage from './AdminPage';
+import SuperAdminLogs from './SuperAdminLogs';
 import { useRef } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
@@ -13,6 +14,7 @@ import emailjs from '@emailjs/browser';
 import Autocomplete from 'react-google-autocomplete';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import BackButton from './BackButton';
+import { migrateWorkers } from './migrateWorkers';
 
 // Loading Animation Component
 const LoadingAnimation = () => {
@@ -165,6 +167,8 @@ const App = () => {
   const [recentBookings, setRecentBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookedSlots, setBookedSlots] = useState([]);
+  const [workers, setWorkers] = useState([]);
+  const [workersLoading, setWorkersLoading] = useState(true);
   const profileRef = useRef();
   const continueButtonRef = useRef(null);
   const bookingFormRef = useRef(null);
@@ -204,6 +208,29 @@ const App = () => {
       unsub();
       document.removeEventListener('mousedown', handleClick);
     };
+  }, []);
+
+  // Real-time listener for workers from Firestore
+  useEffect(() => {
+    setWorkersLoading(true);
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'workers'), orderBy('order', 'asc')),
+      (snapshot) => {
+        const workersData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setWorkers(workersData);
+        setWorkersLoading(false);
+      },
+      (error) => {
+        console.error('Error loading workers:', error);
+        setWorkersLoading(false);
+        // Fallback to empty array if collection doesn't exist yet
+        setWorkers([]);
+      }
+    );
+    return () => unsubscribe();
   }, []);
 
   // Real-time listener for booked slots
@@ -578,45 +605,22 @@ const App = () => {
     },
   ];
 
-  // Dummy data for workers
-  const workers = [
-    { id: 1, name: 'Nick', bio: 'Expert detailer with 5 years of experience.', imageUrl: 'https://placehold.co/100x100/CCCCCC/666666?text=Nick' },
-    { id: 2, name: 'Ricardo', bio: 'Passionate about cars and making them shine.', imageUrl: 'https://placehold.co/100x100/CCCCCC/666666?text=Ricardo' },
-    { id: 4, name: 'Radcliffe', bio: 'Dedicated to delivering top-notch service.', imageUrl: 'https://placehold.co/100x100/CCCCCC/666666?text=Radcliffe' },
-  ];
-
-  // Worker schedules data
-  const workerSchedules = [
-    {
-      name: 'Nick',
-  start: '06:30',
-  end: '14:00',
-      interval: 90, // minutes
-      dayOff: 1, // Monday (0=Sunday, 1=Monday, ...)
-      // Per-day overrides
-      overrides: {
-        // Sunday schedule: 7:00 AM – 2:30 PM
-        0: { start: '07:00', end: '14:30', interval: 90 },
-      },
-    },
-    {
-      name: 'Ricardo',
-      start: '06:30',
-      end: '16:30',
-      interval: 120,
-  lastSlotInclusive: true, // include a 4:30 PM start
-      dayOff: 3, // Wednesday
-    },
-    {
-      name: 'Radcliffe',
-  start: '06:30',
-  end: '14:30',
-  interval: 90,
-  dayOff: 1, // Monday
-  // Exact slots requested for remaining days
-  customSlots: ['06:30', '08:30', '10:00', '11:30', '13:00', '14:30'],
-    },
-  ];
+  // Workers are now loaded from Firestore - see useEffect below
+  
+  // Worker schedules data (dynamically generated from Firestore workers)
+  const workerSchedules = workers
+    .filter(w => w.active)
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map(w => ({
+      name: w.name,
+      start: w.start,
+      end: w.end,
+      interval: w.interval,
+      dayOff: w.dayOff,
+      overrides: w.overrides || null,
+      lastSlotInclusive: w.lastSlotInclusive || false,
+      customSlots: w.customSlots || null,
+    }));
 
   // Dummy data for worker schedules (for demonstration)
   const schedules = {
@@ -2001,6 +2005,10 @@ const App = () => {
         <Route
           path="/admin"
           element={<AdminPage />}
+        />
+        <Route
+          path="/super-admin-logs"
+          element={<SuperAdminLogs />}
         />
         <Route
           path="/login"

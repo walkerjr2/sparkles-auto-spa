@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { collection, orderBy, query, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, orderBy, query, onSnapshot, doc, updateDoc, addDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { signOut } from 'firebase/auth';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { migrateWorkers } from './migrateWorkers';
+import updateWorkerSchedules from './updateWorkerSchedules';
+import { logActivity, ACTIVITY_TYPES, TARGET_TYPES } from './utils/activityLogger';
 
 export default function AdminDashboard() {
   const [bookings, setBookings] = useState([]);
@@ -15,6 +18,26 @@ export default function AdminDashboard() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [showMonthlySummary, setShowMonthlySummary] = useState(false);
   const [priceEdits, setPriceEdits] = useState({});
+  
+  // Worker management states
+  const [workers, setWorkers] = useState([]);
+  const [showWorkerManagement, setShowWorkerManagement] = useState(false);
+  const [showWorkerForm, setShowWorkerForm] = useState(false);
+  const [editingWorker, setEditingWorker] = useState(null);
+  const [workerForm, setWorkerForm] = useState({
+    name: '',
+    bio: '',
+    imageUrl: '',
+    start: '06:30',
+    end: '14:00',
+    interval: 90,
+    dayOff: 1,
+    overrides: null,
+    lastSlotInclusive: false,
+    customSlots: null,
+    active: true,
+    order: 0
+  });
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: 'AIzaSyDcVN1C_ZFgn1smrKc5TyWQPraFZk4rJas',
@@ -33,6 +56,32 @@ export default function AdminDashboard() {
       setBookings(bookingsData);
       setFilteredBookings(bookingsData);
       setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time listener for workers
+  useEffect(() => {
+    console.log('Setting up workers listener...');
+    
+    // Try without ordering first to avoid index issues
+    const q = collection(db, 'workers');
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('Workers snapshot received, docs count:', snapshot.docs.length);
+      const workersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      // Sort manually by order field
+      workersData.sort((a, b) => (a.order || 0) - (b.order || 0));
+      console.log('Workers loaded from Firestore:', workersData);
+      setWorkers(workersData);
+    }, (error) => {
+      console.error('Error loading workers:', error);
+      console.log('This is normal if workers collection does not exist yet. Click "Migrate Workers" button to create it.');
+      setWorkers([]);
     });
 
     return () => unsubscribe();
@@ -58,10 +107,27 @@ export default function AdminDashboard() {
   // Update booking status
   const updateBookingStatus = async (bookingId, newStatus) => {
     try {
+      const booking = bookings.find(b => b.id === bookingId);
+      const oldStatus = booking?.status || 'pending';
+      
       await updateDoc(doc(db, 'bookings', bookingId), {
         status: newStatus,
         updatedAt: new Date()
       });
+      
+      // Log the activity
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: ACTIVITY_TYPES.UPDATE_BOOKING_STATUS,
+        targetType: TARGET_TYPES.BOOKING,
+        targetName: `Booking #${bookingId.slice(-6)} - ${booking?.name || 'Unknown'}`,
+        changes: {
+          before: { status: oldStatus },
+          after: { status: newStatus }
+        },
+        description: `Changed booking status from ${oldStatus} to ${newStatus} for ${booking?.name || 'Unknown'}`
+      });
+      
       alert(`Booking status updated to ${newStatus}!`);
     } catch (error) {
       console.error('Error updating booking:', error);
@@ -72,14 +138,198 @@ export default function AdminDashboard() {
   // Update booking price
   const updateBookingPrice = async (bookingId, newPrice) => {
     try {
+      const booking = bookings.find(b => b.id === bookingId);
+      const oldPrice = booking?.price || 0;
+      
       await updateDoc(doc(db, 'bookings', bookingId), {
         price: Number(newPrice),
         updatedAt: new Date(),
       });
+      
+      // Log the activity
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: ACTIVITY_TYPES.UPDATE_BOOKING_PRICE,
+        targetType: TARGET_TYPES.PRICE,
+        targetName: `Booking #${bookingId.slice(-6)} - ${booking?.name || 'Unknown'}`,
+        changes: {
+          before: { price: oldPrice },
+          after: { price: Number(newPrice) }
+        },
+        description: `Updated price from $${oldPrice} to $${newPrice} for ${booking?.name || 'Unknown'}`
+      });
+      
       alert('Price updated!');
     } catch (error) {
       console.error('Error updating price:', error);
       alert('Failed to update price');
+    }
+  };
+
+  // Worker CRUD operations
+  const handleAddWorker = async () => {
+    try {
+      const workerData = {
+        ...workerForm,
+        interval: Number(workerForm.interval),
+        dayOff: Number(workerForm.dayOff),
+        order: Number(workerForm.order)
+      };
+      
+      await addDoc(collection(db, 'workers'), workerData);
+      
+      // Log the activity
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: ACTIVITY_TYPES.CREATE_WORKER,
+        targetType: TARGET_TYPES.WORKER,
+        targetName: workerForm.name,
+        changes: {
+          before: null,
+          after: workerData
+        },
+        description: `Created new worker: ${workerForm.name} with schedule ${workerForm.start}-${workerForm.end}`
+      });
+      
+      alert('Worker added successfully!');
+      resetWorkerForm();
+      setShowWorkerForm(false);
+    } catch (error) {
+      console.error('Error adding worker:', error);
+      alert('Failed to add worker: ' + error.message);
+    }
+  };
+
+  const handleUpdateWorker = async () => {
+    try {
+      const updatedData = {
+        ...workerForm,
+        interval: Number(workerForm.interval),
+        dayOff: Number(workerForm.dayOff),
+        order: Number(workerForm.order)
+      };
+      
+      await updateDoc(doc(db, 'workers', editingWorker.id), updatedData);
+      
+      // Log the activity
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: ACTIVITY_TYPES.UPDATE_WORKER,
+        targetType: TARGET_TYPES.WORKER,
+        targetName: workerForm.name,
+        changes: {
+          before: editingWorker,
+          after: updatedData
+        },
+        description: `Updated worker: ${workerForm.name}`
+      });
+      
+      alert('Worker updated successfully!');
+      resetWorkerForm();
+      setShowWorkerForm(false);
+      setEditingWorker(null);
+    } catch (error) {
+      console.error('Error updating worker:', error);
+      alert('Failed to update worker: ' + error.message);
+    }
+  };
+
+  const handleDeleteWorker = async (workerId, workerName) => {
+    if (window.confirm(`Are you sure you want to delete ${workerName}? This action cannot be undone.`)) {
+      try {
+        // Find the worker data before deleting
+        const workerToDelete = workers.find(w => w.id === workerId);
+        
+        await deleteDoc(doc(db, 'workers', workerId));
+        
+        // Log the activity
+        await logActivity({
+          userEmail: auth.currentUser?.email || 'Unknown',
+          action: ACTIVITY_TYPES.DELETE_WORKER,
+          targetType: TARGET_TYPES.WORKER,
+          targetName: workerName,
+          changes: {
+            before: workerToDelete,
+            after: null
+          },
+          description: `Deleted worker: ${workerName}`
+        });
+        
+        alert('Worker deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting worker:', error);
+        alert('Failed to delete worker: ' + error.message);
+      }
+    }
+  };
+
+  const handleEditWorker = (worker) => {
+    setEditingWorker(worker);
+    setWorkerForm({
+      name: worker.name,
+      bio: worker.bio || '',
+      imageUrl: worker.imageUrl || '',
+      start: worker.start,
+      end: worker.end,
+      interval: worker.interval,
+      dayOff: worker.dayOff,
+      overrides: worker.overrides || null,
+      lastSlotInclusive: worker.lastSlotInclusive || false,
+      customSlots: worker.customSlots || null,
+      active: worker.active !== undefined ? worker.active : true,
+      order: worker.order || 0
+    });
+    setShowWorkerForm(true);
+  };
+
+  const resetWorkerForm = () => {
+    setWorkerForm({
+      name: '',
+      bio: '',
+      imageUrl: '',
+      start: '06:30',
+      end: '14:00',
+      interval: 90,
+      dayOff: 1,
+      overrides: null,
+      lastSlotInclusive: false,
+      customSlots: null,
+      active: true,
+      order: workers.length
+    });
+  };
+
+  const handleMigrateWorkers = async () => {
+    if (workers.length > 0) {
+      if (!window.confirm('Workers already exist. This will add duplicate workers. Continue?')) {
+        return;
+      }
+    }
+    const result = await migrateWorkers();
+    if (result.success) {
+      // Log the migration
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: ACTIVITY_TYPES.MIGRATE_WORKERS,
+        targetType: TARGET_TYPES.WORKER,
+        targetName: 'Initial Workers (Nick, Ricardo, Radcliffe)',
+        changes: null,
+        description: `Migrated initial workers from code to Firestore database`
+      });
+      alert('Workers migrated successfully!');
+    } else {
+      alert('Migration failed: ' + result.error);
+    }
+  };
+
+  const handleUpdateSchedules = async () => {
+    if (window.confirm('Update Nick and Ricardo to new custom time slots?')) {
+      const result = await updateWorkerSchedules();
+      if (result.success) {
+        alert('✅ Schedules updated!\n\nNick: 6:30am, 8:00am, 9:30am, 11:00am, 12:30pm, 2:00pm\nRicardo: 6:30am, 8:30am, 10:30am, 12:30pm, 2:30pm, 4:30pm');
+      } else {
+        alert('Failed to update schedules: ' + result.error);
+      }
     }
   };
 
@@ -322,6 +572,269 @@ export default function AdminDashboard() {
                 <strong>Note:</strong> Revenue calculations are based on starting prices and only include completed bookings. 
                 Actual revenue may vary based on vehicle size and additional services.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Worker Management Toggle */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowWorkerManagement(!showWorkerManagement)}
+            className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
+          >
+            <div className="flex justify-between items-center">
+              <div className="text-left">
+                <h2 className="text-2xl font-bold mb-2">👷 Worker Management</h2>
+                <p className="text-purple-200 font-bold text-lg">Manage employees, schedules, and work hours</p>
+              </div>
+              <span className="text-3xl">{showWorkerManagement ? '▼' : '▶'}</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Worker Management Content */}
+        {showWorkerManagement && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-fade-in">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Manage Workers</h2>
+              <div className="flex gap-2">
+                {workers.length === 0 && (
+                  <button
+                    onClick={handleMigrateWorkers}
+                    className="px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors"
+                  >
+                    🔄 Migrate Workers (First Time)
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    resetWorkerForm();
+                    setEditingWorker(null);
+                    setShowWorkerForm(!showWorkerForm);
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  {showWorkerForm ? '✕ Cancel' : '➕ Add Worker'}
+                </button>
+              </div>
+            </div>
+
+            {/* Worker Form */}
+            {showWorkerForm && (
+              <div className="bg-gray-50 rounded-xl p-6 mb-6 border-2 border-purple-200">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  {editingWorker ? 'Edit Worker' : 'Add New Worker'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+                    <input
+                      type="text"
+                      value={workerForm.name}
+                      onChange={(e) => setWorkerForm({ ...workerForm, name: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                      placeholder="Worker name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Image URL</label>
+                    <input
+                      type="text"
+                      value={workerForm.imageUrl}
+                      onChange={(e) => setWorkerForm({ ...workerForm, imageUrl: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                      placeholder="https://example.com/image.png"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
+                    <textarea
+                      value={workerForm.bio}
+                      onChange={(e) => setWorkerForm({ ...workerForm, bio: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                      placeholder="Short bio about the worker"
+                      rows="2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Start Time *</label>
+                    <input
+                      type="time"
+                      value={workerForm.start}
+                      onChange={(e) => setWorkerForm({ ...workerForm, start: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">End Time *</label>
+                    <input
+                      type="time"
+                      value={workerForm.end}
+                      onChange={(e) => setWorkerForm({ ...workerForm, end: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Time Slot Interval (minutes) *</label>
+                    <input
+                      type="number"
+                      value={workerForm.interval}
+                      onChange={(e) => setWorkerForm({ ...workerForm, interval: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                      placeholder="90"
+                      min="15"
+                      step="15"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Booking slots will be created every X minutes</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Day Off *</label>
+                    <select
+                      value={workerForm.dayOff}
+                      onChange={(e) => setWorkerForm({ ...workerForm, dayOff: Number(e.target.value) })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                    >
+                      <option value={0}>Sunday</option>
+                      <option value={1}>Monday</option>
+                      <option value={2}>Tuesday</option>
+                      <option value={3}>Wednesday</option>
+                      <option value={4}>Thursday</option>
+                      <option value={5}>Friday</option>
+                      <option value={6}>Saturday</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Display Order</label>
+                    <input
+                      type="number"
+                      value={workerForm.order}
+                      onChange={(e) => setWorkerForm({ ...workerForm, order: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                      placeholder="0"
+                      min="0"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Lower numbers appear first</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                    <select
+                      value={workerForm.active}
+                      onChange={(e) => setWorkerForm({ ...workerForm, active: e.target.value === 'true' })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                    >
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Include Last Slot</label>
+                    <select
+                      value={workerForm.lastSlotInclusive}
+                      onChange={(e) => setWorkerForm({ ...workerForm, lastSlotInclusive: e.target.value === 'true' })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                    >
+                      <option value="false">No</option>
+                      <option value="true">Yes</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Allow booking to start at end time</p>
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={editingWorker ? handleUpdateWorker : handleAddWorker}
+                    className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    {editingWorker ? '💾 Update Worker' : '➕ Add Worker'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowWorkerForm(false);
+                      setEditingWorker(null);
+                      resetWorkerForm();
+                    }}
+                    className="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Workers List */}
+            <div className="space-y-4">
+              {workers.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg mb-4">No workers found</p>
+                  <p className="text-gray-400 text-sm">Click "Migrate Workers" above to add the initial workers, or "Add Worker" to create a new one.</p>
+                </div>
+              ) : (
+                workers.map((worker) => (
+                  <div
+                    key={worker.id}
+                    className={`border-2 rounded-xl p-6 transition-all ${
+                      worker.active ? 'border-purple-200 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-4 flex-1">
+                        {worker.imageUrl && (
+                          <img
+                            src={worker.imageUrl}
+                            alt={worker.name}
+                            className="w-16 h-16 rounded-full object-cover"
+                            onError={(e) => e.target.style.display = 'none'}
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-xl font-bold text-gray-800">{worker.name}</h3>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              worker.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {worker.active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          {worker.bio && <p className="text-gray-600 text-sm mb-3">{worker.bio}</p>}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div>
+                              <span className="text-gray-500 font-semibold">Hours:</span>
+                              <p className="text-gray-800">{worker.start} - {worker.end}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 font-semibold">Interval:</span>
+                              <p className="text-gray-800">{worker.interval} min</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 font-semibold">Day Off:</span>
+                              <p className="text-gray-800">
+                                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][worker.dayOff]}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 font-semibold">Order:</span>
+                              <p className="text-gray-800">#{worker.order}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditWorker(worker)}
+                          className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteWorker(worker.id, worker.name)}
+                          className="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
