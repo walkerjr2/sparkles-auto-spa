@@ -431,18 +431,18 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex justify-between items-center">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-sparkle-blue mb-2">Admin Dashboard</h1>
-              <p className="text-gray-600">Manage all bookings in real-time</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-sparkle-blue mb-1 sm:mb-2">Admin Dashboard</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage all bookings in real-time</p>
             </div>
             <button
               onClick={handleBack}
-              className="px-6 py-3 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition-colors"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition-colors text-sm sm:text-base"
             >
               🚪 Logout
             </button>
@@ -450,92 +450,92 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow p-4 border-l-4 border-blue-500">
-            <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total Bookings</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-white rounded-xl shadow p-3 sm:p-4 border-l-4 border-blue-500">
+            <div className="text-xl sm:text-2xl font-bold text-gray-800">{stats.total}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Total</div>
           </div>
-          <div className="bg-white rounded-xl shadow p-4 border-l-4 border-yellow-500">
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-            <div className="text-sm text-gray-600">Pending</div>
+          <div className="bg-white rounded-xl shadow p-3 sm:p-4 border-l-4 border-yellow-500">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.pending}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Pending</div>
           </div>
-          <div className="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
-            <div className="text-2xl font-bold text-green-600">{stats.confirmed}</div>
-            <div className="text-sm text-gray-600">Confirmed</div>
+          <div className="bg-white rounded-xl shadow p-3 sm:p-4 border-l-4 border-green-500">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.confirmed}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Confirmed</div>
           </div>
-          <div className="bg-white rounded-xl shadow p-4 border-l-4 border-blue-400">
-            <div className="text-2xl font-bold text-blue-600">{stats.completed}</div>
-            <div className="text-sm text-gray-600">Completed</div>
+          <div className="bg-white rounded-xl shadow p-3 sm:p-4 border-l-4 border-blue-400">
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.completed}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Completed</div>
           </div>
-          <div className="bg-white rounded-xl shadow p-4 border-l-4 border-red-500">
-            <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
-            <div className="text-sm text-gray-600">Cancelled</div>
+          <div className="bg-white rounded-xl shadow p-3 sm:p-4 border-l-4 border-red-500 col-span-2 sm:col-span-1">
+            <div className="text-xl sm:text-2xl font-bold text-red-600">{stats.cancelled}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Cancelled</div>
           </div>
         </div>
 
         {/* Monthly Summary Toggle */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={() => setShowMonthlySummary(!showMonthlySummary)}
-            className="w-full bg-gradient-to-r from-sparkle-blue to-blue-600 text-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
+            className="w-full bg-gradient-to-r from-sparkle-blue to-blue-600 text-white rounded-2xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-all"
           >
-            <div className="flex justify-between items-center">
-              <div className="text-left">
-                <h2 className="text-2xl font-bold mb-2 text-sparkle-blue">📊 Monthly Summary & Revenue</h2>
-                <p className="text-yellow-300 font-bold text-lg">Click to view detailed monthly statistics</p>
+            <div className="flex justify-between items-center gap-2">
+              <div className="text-left flex-1">
+                <h2 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2 text-white">📊 Monthly Summary</h2>
+                <p className="text-yellow-300 font-bold text-xs sm:text-lg">View monthly statistics</p>
               </div>
-              <span className="text-3xl">{showMonthlySummary ? '▼' : '▶'}</span>
+              <span className="text-2xl sm:text-3xl flex-shrink-0">{showMonthlySummary ? '▼' : '▶'}</span>
             </div>
           </button>
         </div>
 
         {/* Monthly Summary Content */}
         {showMonthlySummary && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-fade-in">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Monthly Report</h2>
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Monthly Report</h2>
               <input
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sparkle-blue"
+                className="w-full sm:w-auto p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sparkle-blue text-sm sm:text-base"
               />
             </div>
             {/* Monthly Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-300">
-                <div className="text-sm text-blue-800 font-bold mb-1">Total Revenue (Completed)</div>
-                <div className="text-3xl font-bold text-blue-900">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6 border-2 border-blue-300">
+                <div className="text-xs sm:text-sm text-blue-800 font-bold mb-1">Total Revenue (Completed)</div>
+                <div className="text-2xl sm:text-3xl font-bold text-blue-900">
                   ${monthlySummary.totalRevenue.toLocaleString()}
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border-2 border-green-200">
-                <div className="text-sm text-green-700 font-semibold mb-1">Total Bookings</div>
-                <div className="text-3xl font-bold text-green-800">
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-6 border-2 border-green-200">
+                <div className="text-xs sm:text-sm text-green-700 font-semibold mb-1">Total Bookings</div>
+                <div className="text-2xl sm:text-3xl font-bold text-green-800">
                   {monthlySummary.totalBookings}
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border-2 border-purple-200">
-                <div className="text-sm text-purple-700 font-semibold mb-1">Completed Bookings</div>
-                <div className="text-3xl font-bold text-purple-800">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-6 border-2 border-purple-200 sm:col-span-2 md:col-span-1">
+                <div className="text-xs sm:text-sm text-purple-700 font-semibold mb-1">Completed Bookings</div>
+                <div className="text-2xl sm:text-3xl font-bold text-purple-800">
                   {monthlySummary.completedBookings}
                 </div>
               </div>
             </div>
 
             {/* Service Breakdown */}
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Service Breakdown</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Service Breakdown</h3>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pending</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Confirmed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cancelled</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-600 uppercase font-bold">Revenue</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Completed</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Pending</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Confirmed</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Cancelled</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-blue-600 uppercase font-bold">Revenue</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -543,14 +543,14 @@ export default function AdminDashboard() {
                     .sort((a, b) => b[1].revenue - a[1].revenue)
                     .map(([service, stats]) => (
                       <tr key={service} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{service}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{stats.count}</td>
-                        <td className="px-6 py-4 text-sm text-green-600 font-semibold">{stats.completed}</td>
-                        <td className="px-6 py-4 text-sm text-yellow-600">{stats.pending}</td>
-                        <td className="px-6 py-4 text-sm text-blue-600">{stats.confirmed}</td>
-                        <td className="px-6 py-4 text-sm text-red-600">{stats.cancelled}</td>
-                        <td className="px-6 py-4">
-                          <span className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">{service}</td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900">{stats.count}</td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-green-600 font-semibold">{stats.completed}</td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-yellow-600">{stats.pending}</td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-blue-600">{stats.confirmed}</td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-red-600">{stats.cancelled}</td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4">
+                          <span className="text-sm sm:text-lg font-bold text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 rounded-lg">
                             ${stats.revenue.toLocaleString()}
                           </span>
                         </td>
@@ -558,7 +558,7 @@ export default function AdminDashboard() {
                     ))}
                   {Object.keys(monthlySummary.serviceStats).length === 0 && (
                     <tr>
-                      <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan="7" className="px-3 sm:px-6 py-6 sm:py-8 text-center text-gray-500 text-sm">
                         No bookings found for this month
                       </td>
                     </tr>
@@ -567,8 +567,8 @@ export default function AdminDashboard() {
               </table>
             </div>
 
-            <div className="mt-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+              <p className="text-xs sm:text-sm text-blue-800">
                 <strong>Note:</strong> Revenue calculations are based on starting prices and only include completed bookings. 
                 Actual revenue may vary based on vehicle size and additional services.
               </p>
@@ -577,33 +577,33 @@ export default function AdminDashboard() {
         )}
 
         {/* Worker Management Toggle */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={() => setShowWorkerManagement(!showWorkerManagement)}
-            className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
+            className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-2xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-all"
           >
-            <div className="flex justify-between items-center">
-              <div className="text-left">
-                <h2 className="text-2xl font-bold mb-2">👷 Worker Management</h2>
-                <p className="text-purple-200 font-bold text-lg">Manage employees, schedules, and work hours</p>
+            <div className="flex justify-between items-center gap-2">
+              <div className="text-left flex-1">
+                <h2 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2">👷 Worker Management</h2>
+                <p className="text-purple-200 font-bold text-xs sm:text-lg">Manage employees & schedules</p>
               </div>
-              <span className="text-3xl">{showWorkerManagement ? '▼' : '▶'}</span>
+              <span className="text-2xl sm:text-3xl flex-shrink-0">{showWorkerManagement ? '▼' : '▶'}</span>
             </div>
           </button>
         </div>
 
         {/* Worker Management Content */}
         {showWorkerManagement && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-fade-in">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Manage Workers</h2>
-              <div className="flex gap-2">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Manage Workers</h2>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 {workers.length === 0 && (
                   <button
                     onClick={handleMigrateWorkers}
-                    className="px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors"
+                    className="px-3 sm:px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors text-sm sm:text-base whitespace-nowrap"
                   >
-                    🔄 Migrate Workers (First Time)
+                    🔄 Migrate Workers
                   </button>
                 )}
                 <button
@@ -612,7 +612,7 @@ export default function AdminDashboard() {
                     setEditingWorker(null);
                     setShowWorkerForm(!showWorkerForm);
                   }}
-                  className="px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+                  className="px-3 sm:px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base"
                 >
                   {showWorkerForm ? '✕ Cancel' : '➕ Add Worker'}
                 </button>
@@ -771,31 +771,31 @@ export default function AdminDashboard() {
                 workers.map((worker) => (
                   <div
                     key={worker.id}
-                    className={`border-2 rounded-xl p-6 transition-all ${
+                    className={`border-2 rounded-xl p-4 sm:p-6 transition-all ${
                       worker.active ? 'border-purple-200 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'
                     }`}
                   >
-                    <div className="flex justify-between items-start">
-                      <div className="flex gap-4 flex-1">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex gap-3 sm:gap-4">
                         {worker.imageUrl && (
                           <img
                             src={worker.imageUrl}
                             alt={worker.name}
-                            className="w-16 h-16 rounded-full object-cover"
+                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover flex-shrink-0"
                             onError={(e) => e.target.style.display = 'none'}
                           />
                         )}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-xl font-bold text-gray-800">{worker.name}</h3>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <h3 className="text-lg sm:text-xl font-bold text-gray-800">{worker.name}</h3>
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                               worker.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                             }`}>
                               {worker.active ? 'Active' : 'Inactive'}
                             </span>
                           </div>
-                          {worker.bio && <p className="text-gray-600 text-sm mb-3">{worker.bio}</p>}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                          {worker.bio && <p className="text-gray-600 text-xs sm:text-sm mb-3">{worker.bio}</p>}
+                          <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                             <div>
                               <span className="text-gray-500 font-semibold">Hours:</span>
                               <p className="text-gray-800">{worker.start} - {worker.end}</p>
@@ -807,7 +807,7 @@ export default function AdminDashboard() {
                             <div>
                               <span className="text-gray-500 font-semibold">Day Off:</span>
                               <p className="text-gray-800">
-                                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][worker.dayOff]}
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][worker.dayOff]}
                               </p>
                             </div>
                             <div>
@@ -820,13 +820,13 @@ export default function AdminDashboard() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEditWorker(worker)}
-                          className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"
+                          className="flex-1 px-3 sm:px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors text-sm"
                         >
                           ✏️ Edit
                         </button>
                         <button
                           onClick={() => handleDeleteWorker(worker.id, worker.name)}
-                          className="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors"
+                          className="flex-1 px-3 sm:px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors text-sm"
                         >
                           🗑️ Delete
                         </button>
@@ -840,15 +840,15 @@ export default function AdminDashboard() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Filters</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Filters</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sparkle-blue"
+                className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sparkle-blue text-sm sm:text-base"
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -863,16 +863,16 @@ export default function AdminDashboard() {
                 type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sparkle-blue"
+                className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sparkle-blue text-sm sm:text-base"
               />
             </div>
           </div>
         </div>
 
-        {/* Bookings Table */}
+        {/* Bookings Table/Cards */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-800">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
               Bookings ({filteredBookings.length})
             </h2>
           </div>
@@ -882,129 +882,240 @@ export default function AdminDashboard() {
           ) : filteredBookings.length === 0 ? (
             <div className="p-8 text-center text-gray-500">No bookings found</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredBookings.map((booking) => {
-                    // For price editing
-                    const priceValue = priceEdits[booking.id] !== undefined ? priceEdits[booking.id] : (booking.price !== undefined ? booking.price : servicePricing[booking.service] || 0);
-                    const statusColors = {
-                      pending: 'bg-yellow-100 text-yellow-800',
-                      confirmed: 'bg-green-100 text-green-800',
-                      completed: 'bg-blue-100 text-blue-800',
-                      cancelled: 'bg-red-100 text-red-800'
-                    };
-                    
-                    return (
-                      <tr key={booking.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-gray-900">{booking.name}</div>
-                          <div className="text-sm text-gray-500">{booking.email}</div>
-                          <div className="text-sm text-gray-500">{booking.phone}</div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{booking.service}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{booking.vehicleSize || 'N/A'}</td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-semibold text-gray-900">{booking.date}</div>
-                          <div className="text-sm text-gray-500">{booking.time}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate">{booking.location}</div>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredBookings.map((booking) => {
+                      const priceValue = priceEdits[booking.id] !== undefined ? priceEdits[booking.id] : (booking.price !== undefined ? booking.price : servicePricing[booking.service] || 0);
+                      const statusColors = {
+                        pending: 'bg-yellow-100 text-yellow-800',
+                        confirmed: 'bg-green-100 text-green-800',
+                        completed: 'bg-blue-100 text-blue-800',
+                        cancelled: 'bg-red-100 text-red-800'
+                      };
+                      
+                      return (
+                        <tr key={booking.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-gray-900">{booking.name}</div>
+                            <div className="text-sm text-gray-500">{booking.email}</div>
+                            <div className="text-sm text-gray-500">{booking.phone}</div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{booking.service}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{booking.vehicleSize || 'N/A'}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-semibold text-gray-900">{booking.date}</div>
+                            <div className="text-sm text-gray-500">{booking.time}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900 max-w-xs truncate">{booking.location}</div>
+                            {booking.lat && booking.lng && (
+                              <button
+                                onClick={() => {
+                                  setSelectedBooking(booking);
+                                  setShowMapModal(true);
+                                }}
+                                className="text-xs text-sparkle-blue hover:underline mt-1 flex items-center gap-1"
+                              >
+                                📍 View on Map
+                              </button>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{booking.worker || 'Not Assigned'}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                              booking.paymentMethod === 'Cash' 
+                                ? 'bg-green-100 text-green-800' 
+                                : booking.paymentMethod === 'Bank Transfer'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {booking.paymentMethod || 'Not Selected'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                className="w-24 p-1 border border-gray-300 rounded text-sm"
+                                value={priceValue}
+                                onChange={e => setPriceEdits({ ...priceEdits, [booking.id]: e.target.value })}
+                              />
+                              <button
+                                className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition-colors"
+                                onClick={() => updateBookingPrice(booking.id, priceEdits[booking.id] !== undefined ? priceEdits[booking.id] : priceValue)}
+                                disabled={Number(priceValue) === Number(booking.price)}
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${statusColors[booking.status || 'pending']}`}>
+                              {(booking.status || 'pending').charAt(0).toUpperCase() + (booking.status || 'pending').slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col gap-1">
+                              {booking.status !== 'confirmed' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
+                                <button
+                                  onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                                  className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition-colors"
+                                >
+                                  ✓ Confirm
+                                </button>
+                              )}
+                              {booking.status === 'confirmed' && (
+                                <button
+                                  onClick={() => updateBookingStatus(booking.id, 'completed')}
+                                  className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
+                                >
+                                  ✓ Complete
+                                </button>
+                              )}
+                              {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                                <button
+                                  onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                  className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors"
+                                >
+                                  ✗ Cancel
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden divide-y divide-gray-200">
+                {filteredBookings.map((booking) => {
+                  const priceValue = priceEdits[booking.id] !== undefined ? priceEdits[booking.id] : (booking.price !== undefined ? booking.price : servicePricing[booking.service] || 0);
+                  const statusColors = {
+                    pending: 'bg-yellow-100 text-yellow-800',
+                    confirmed: 'bg-green-100 text-green-800',
+                    completed: 'bg-blue-100 text-blue-800',
+                    cancelled: 'bg-red-100 text-red-800'
+                  };
+                  
+                  return (
+                    <div key={booking.id} className="p-4 space-y-3">
+                      {/* Header */}
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-gray-900">{booking.name}</h3>
+                          <p className="text-xs text-gray-500">{booking.email}</p>
+                          <p className="text-xs text-gray-500">{booking.phone}</p>
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[booking.status || 'pending']}`}>
+                          {(booking.status || 'pending').charAt(0).toUpperCase() + (booking.status || 'pending').slice(1)}
+                        </span>
+                      </div>
+
+                      {/* Service Info */}
+                      <div className="text-sm space-y-1">
+                        <p><strong>Service:</strong> {booking.service}</p>
+                        <p><strong>Vehicle:</strong> {booking.vehicleSize || 'N/A'}</p>
+                        <p><strong>Date:</strong> {booking.date} at {booking.time}</p>
+                        <p><strong>Worker:</strong> {booking.worker || 'Not Assigned'}</p>
+                        <div className="flex items-center justify-between">
+                          <strong>Location:</strong>
                           {booking.lat && booking.lng && (
                             <button
                               onClick={() => {
                                 setSelectedBooking(booking);
                                 setShowMapModal(true);
                               }}
-                              className="text-xs text-sparkle-blue hover:underline mt-1 flex items-center gap-1"
+                              className="text-xs text-sparkle-blue hover:underline"
                             >
-                              📍 View on Map
+                              📍 View Map
                             </button>
                           )}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{booking.worker || 'Not Assigned'}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                            booking.paymentMethod === 'Cash' 
-                              ? 'bg-green-100 text-green-800' 
-                              : booking.paymentMethod === 'Bank Transfer'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {booking.paymentMethod || 'Not Selected'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min="0"
-                              className="w-24 p-1 border border-gray-300 rounded text-sm"
-                              value={priceValue}
-                              onChange={e => setPriceEdits({ ...priceEdits, [booking.id]: e.target.value })}
-                            />
-                            <button
-                              className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition-colors"
-                              onClick={() => updateBookingPrice(booking.id, priceEdits[booking.id] !== undefined ? priceEdits[booking.id] : priceValue)}
-                              disabled={Number(priceValue) === Number(booking.price)}
-                            >
-                              Save
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${statusColors[booking.status || 'pending']}`}>
-                            {(booking.status || 'pending').charAt(0).toUpperCase() + (booking.status || 'pending').slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1">
-                            {booking.status !== 'confirmed' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
-                              <button
-                                onClick={() => updateBookingStatus(booking.id, 'confirmed')}
-                                className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition-colors"
-                              >
-                                ✓ Confirm
-                              </button>
-                            )}
-                            {booking.status === 'confirmed' && (
-                              <button
-                                onClick={() => updateBookingStatus(booking.id, 'completed')}
-                                className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
-                              >
-                                ✓ Complete
-                              </button>
-                            )}
-                            {booking.status !== 'cancelled' && booking.status !== 'completed' && (
-                              <button
-                                onClick={() => updateBookingStatus(booking.id, 'cancelled')}
-                                className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors"
-                              >
-                                ✗ Cancel
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                        <p className="text-xs text-gray-600 truncate">{booking.location}</p>
+                      </div>
+
+                      {/* Payment & Price */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          booking.paymentMethod === 'Cash' 
+                            ? 'bg-green-100 text-green-800' 
+                            : booking.paymentMethod === 'Bank Transfer'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {booking.paymentMethod || 'No Payment'}
+                        </span>
+                        <div className="flex items-center gap-1 flex-1">
+                          <input
+                            type="number"
+                            min="0"
+                            className="flex-1 min-w-0 p-1 border border-gray-300 rounded text-sm"
+                            value={priceValue}
+                            onChange={e => setPriceEdits({ ...priceEdits, [booking.id]: e.target.value })}
+                          />
+                          <button
+                            className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                            onClick={() => updateBookingPrice(booking.id, priceEdits[booking.id] !== undefined ? priceEdits[booking.id] : priceValue)}
+                            disabled={Number(priceValue) === Number(booking.price)}
+                          >
+                            $
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        {booking.status !== 'confirmed' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
+                          <button
+                            onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                            className="flex-1 text-xs bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600 transition-colors"
+                          >
+                            ✓ Confirm
+                          </button>
+                        )}
+                        {booking.status === 'confirmed' && (
+                          <button
+                            onClick={() => updateBookingStatus(booking.id, 'completed')}
+                            className="flex-1 text-xs bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 transition-colors"
+                          >
+                            ✓ Complete
+                          </button>
+                        )}
+                        {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                          <button
+                            onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                            className="flex-1 text-xs bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 transition-colors"
+                          >
+                            ✗ Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
 
