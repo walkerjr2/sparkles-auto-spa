@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 const CustomerLogin = () => {
   const navigate = useNavigate();
+  const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
   // Removed redirect after login so user stays on main site
   // useEffect(() => {
@@ -20,6 +21,13 @@ const CustomerLogin = () => {
   // }, [navigate]);
 
   const handleGoogleLogin = async () => {
+    // Prevent multiple simultaneous login attempts
+    if (isLoggingIn) {
+      console.log('Login already in progress...');
+      return;
+    }
+
+    setIsLoggingIn(true);
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
       prompt: 'select_account'
@@ -30,16 +38,22 @@ const CustomerLogin = () => {
       navigate('/'); // Go to home page after login
     } catch (error) {
       console.error("Login error:", error);
+      setIsLoggingIn(false); // Reset on error
       
       if (error.code === 'auth/popup-closed-by-user') {
         alert("Sign-in cancelled. Please try again.");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // Silently ignore - this happens when multiple popups are triggered
+        console.log('Previous popup cancelled, new one opened');
       } else if (error.code === 'auth/unauthorized-domain') {
-        alert("This domain is not authorized. Please contact support.");
+        alert("This domain is not authorized. Please add your domain to Firebase Authentication settings.");
       } else if (error.code === 'auth/popup-blocked') {
         alert("Popup was blocked. Please allow popups for this site and try again.");
       } else {
         alert("Google sign-in failed: " + error.message);
       }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -56,15 +70,25 @@ const CustomerLogin = () => {
         <div className="w-full flex flex-col items-center justify-center p-10 gap-8">
           <button
             onClick={handleGoogleLogin}
-            className="w-full px-10 py-4 bg-sparkle-blue text-white font-bold rounded-full shadow-lg hover:bg-sparkle-blue-dark transition-colors text-lg flex items-center justify-center gap-3 book-btn-mobile"
+            disabled={isLoggingIn}
+            className={`w-full px-10 py-4 bg-sparkle-blue text-white font-bold rounded-full shadow-lg transition-colors text-lg flex items-center justify-center gap-3 book-btn-mobile ${isLoggingIn ? 'opacity-50 cursor-not-allowed' : 'hover:bg-sparkle-blue-dark'}`}
             style={{minWidth: '200px'}}
           >
-            <img
-              src="https://developers.google.com/identity/images/g-logo.png"
-              alt="Google logo"
-              style={{ width: 28, height: 28, background: 'white', borderRadius: '50%', padding: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}
-            />
-            Sign in with Google
+            {isLoggingIn ? (
+              <>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                Signing in...
+              </>
+            ) : (
+              <>
+                <img
+                  src="https://developers.google.com/identity/images/g-logo.png"
+                  alt="Google logo"
+                  style={{ width: 28, height: 28, background: 'white', borderRadius: '50%', padding: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}
+                />
+                Sign in with Google
+              </>
+            )}
           </button>
           <div className="w-full flex flex-col items-center mt-2">
             <span className="text-gray-400 text-xs">Powered by Sparkles Auto Spa</span>

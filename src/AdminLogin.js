@@ -6,15 +6,38 @@ export default function AdminLogin({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+    
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      onLogin();
+      // onLogin will be called by onAuthStateChanged in AdminPage
+      if (onLogin) onLogin();
     } catch (err) {
-      setError(err.message || 'Invalid credentials');
+      console.error('Admin login error:', err);
+      
+      // Better error messages
+      let errorMessage = 'Invalid credentials';
+      if (err.code === 'auth/user-not-found') {
+        errorMessage = 'No admin account found with this email';
+      } else if (err.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email format';
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed attempts. Try again later';
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Check your internet connection';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      setLoading(false);
     }
   };
 
@@ -45,10 +68,18 @@ export default function AdminLogin({ onLogin }) {
       </div>
       <button
         type="submit"
-        className="w-full py-3 rounded-xl bg-sparkle-blue text-white font-bold text-xl shadow-lg hover:bg-sparkle-blue-dark transition-colors border-2 border-sparkle-blue mt-2"
+        disabled={loading}
+        className={`w-full py-3 rounded-xl bg-sparkle-blue text-white font-bold text-xl shadow-lg transition-colors border-2 border-sparkle-blue mt-2 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-sparkle-blue-dark'}`}
         style={{ letterSpacing: '1px' }}
       >
-        Login
+        {loading ? (
+          <div className="flex items-center justify-center gap-2">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            Logging in...
+          </div>
+        ) : (
+          'Login'
+        )}
       </button>
       {error && (
         <div className="w-full text-center text-red-600 bg-red-50 border border-red-200 rounded-xl py-2 px-3 mt-2 text-base font-medium shadow-sm">
