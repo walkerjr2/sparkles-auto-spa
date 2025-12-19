@@ -271,6 +271,102 @@ const App = () => {
     phone: '',
     paymentMethod: '',
   });
+  
+  // Email validation state
+  const [emailError, setEmailError] = useState('');
+  const [emailValid, setEmailValid] = useState(false);
+  const [emailSuggestion, setEmailSuggestion] = useState('');
+  
+  // Email validation function with typo detection
+  const validateEmail = (email) => {
+    if (!email || email.trim() === '') {
+      return { valid: false, error: '', suggestion: '' };
+    }
+
+    // Check for consecutive dots (invalid in email addresses)
+    if (email.includes('..')) {
+      return { 
+        valid: false, 
+        error: 'Email address cannot contain consecutive dots', 
+        suggestion: '' 
+      };
+    }
+
+    // Comprehensive email regex - supports letters, numbers, dots, hyphens, underscores, and plus signs
+    const emailRegex = /^[a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    // Check basic format
+    if (!emailRegex.test(email)) {
+      return { 
+        valid: false, 
+        error: 'Please enter a valid email address (e.g., name@example.com)', 
+        suggestion: '' 
+      };
+    }
+
+    // Common email provider typos
+    const commonProviders = {
+      'gmial.com': 'gmail.com',
+      'gmai.com': 'gmail.com',
+      'gmil.com': 'gmail.com',
+      'gmail.con': 'gmail.com',
+      'gmail.co': 'gmail.com',
+      'gmaill.com': 'gmail.com',
+      'hotmial.com': 'hotmail.com',
+      'hotmail.con': 'hotmail.com',
+      'hotmial.co': 'hotmail.com',
+      'yahooo.com': 'yahoo.com',
+      'yahoo.con': 'yahoo.com',
+      'yaho.com': 'yahoo.com',
+      'outlok.com': 'outlook.com',
+      'outlook.con': 'outlook.com',
+      'outlok.com': 'outlook.com',
+      'icloud.con': 'icloud.com',
+      'icoud.com': 'icloud.com',
+      'iclod.com': 'icloud.com',
+      'icloud.co': 'icloud.com',
+      'iclould.com': 'icloud.com',
+      'aol.con': 'aol.com',
+      'ao.com': 'aol.com',
+      'aoll.com': 'aol.com',
+    };
+
+    // Extract domain
+    const domain = email.split('@')[1]?.toLowerCase();
+    const username = email.split('@')[0];
+
+    // Check for typos in domain
+    if (domain && commonProviders[domain]) {
+      const correctedEmail = `${username}@${commonProviders[domain]}`;
+      return {
+        valid: true,
+        error: '',
+        suggestion: correctedEmail
+      };
+    }
+
+    // All checks passed
+    return { valid: true, error: '', suggestion: '' };
+  };
+
+  // Handle email blur (validation on field exit)
+  const handleEmailBlur = () => {
+    const result = validateEmail(bookingDetails.email);
+    setEmailValid(result.valid);
+    setEmailError(result.error);
+    setEmailSuggestion(result.suggestion);
+  };
+
+  // Handle accepting email suggestion
+  const acceptEmailSuggestion = () => {
+    if (emailSuggestion) {
+      setBookingDetails(prev => ({ ...prev, email: emailSuggestion }));
+      setEmailSuggestion('');
+      setEmailValid(true);
+      setEmailError('');
+    }
+  };
+  
   // Google Maps API loader
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: 'AIzaSyDcVN1C_ZFgn1smrKc5TyWQPraFZk4rJas',
@@ -314,10 +410,40 @@ const App = () => {
   const handleBookingChange = (e) => {
     const { name, value } = e.target;
     setBookingDetails(prev => ({ ...prev, [name]: value }));
+    
+    // Reset email validation when email changes
+    if (name === 'email') {
+      setEmailError('');
+      setEmailValid(false);
+      setEmailSuggestion('');
+    }
   };
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate email before submission
+    const emailValidation = validateEmail(bookingDetails.email);
+    if (!emailValidation.valid) {
+      setEmailError(emailValidation.error);
+      setEmailValid(false);
+      alert('Please enter a valid email address before submitting.');
+      setLoading(false);
+      return;
+    }
+    
+    // If there's a suggestion, ask user to confirm or correct
+    if (emailValidation.suggestion && emailValidation.suggestion !== bookingDetails.email) {
+      const shouldUseCorrection = window.confirm(
+        `Did you mean "${emailValidation.suggestion}"?\n\nClick OK to use the corrected email, or Cancel to keep your original email.`
+      );
+      if (shouldUseCorrection) {
+        setBookingDetails(prev => ({ ...prev, email: emailValidation.suggestion }));
+        // Update the booking with corrected email
+        bookingDetails.email = emailValidation.suggestion;
+      }
+    }
+    
     setLoading(true);
 
     try {
@@ -1481,10 +1607,100 @@ const App = () => {
                 {/* Step 5: Customer Details */}
                 {bookingStep === 5 && (
                   <div>
-                    <h3 className="text-2xl font-semibold text-sparkle-blue mb-4">5. Your Details</h3>
-                    <input type="text" name="name" placeholder="Full Name" value={bookingDetails.name} onChange={handleBookingChange} className="w-full p-3 rounded-lg bg-gray-100 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sparkle-green mb-4" />
-                    <input type="email" name="email" placeholder="Email Address" value={bookingDetails.email} onChange={handleBookingChange} className="w-full p-3 rounded-lg bg-gray-100 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sparkle-green mb-4" />
-                    <input type="tel" name="phone" placeholder="Phone Number" value={bookingDetails.phone} onChange={handleBookingChange} className="w-full p-3 rounded-lg bg-gray-100 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sparkle-green mb-4" />
+                    <h3 className="text-xl sm:text-2xl font-semibold text-sparkle-blue mb-4">5. Your Details</h3>
+                    <input 
+                      type="text" 
+                      name="name" 
+                      placeholder="Full Name" 
+                      value={bookingDetails.name} 
+                      onChange={handleBookingChange} 
+                      className="w-full p-3 sm:p-4 text-base sm:text-lg rounded-lg bg-gray-100 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sparkle-green mb-4" 
+                    />
+                    
+                    {/* Email Input with Validation - Mobile Optimized */}
+                    <div className="mb-4">
+                      <div className="relative">
+                        <input 
+                          type="email" 
+                          name="email" 
+                          placeholder="Email Address" 
+                          value={bookingDetails.email} 
+                          onChange={handleBookingChange}
+                          onBlur={handleEmailBlur}
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          autoComplete="email"
+                          inputMode="email"
+                          className={`w-full p-3 sm:p-4 pr-12 text-base sm:text-lg rounded-lg bg-gray-100 text-gray-900 border-2 focus:outline-none focus:ring-2 transition-all ${
+                            emailError 
+                              ? 'border-red-500 focus:ring-red-500' 
+                              : emailValid && bookingDetails.email 
+                              ? 'border-green-500 focus:ring-green-500' 
+                              : 'border-gray-300 focus:ring-sparkle-green'
+                          }`}
+                        />
+                        {/* Validation Icon - Touch-friendly size */}
+                        {bookingDetails.email && (
+                          <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                            {emailValid && !emailSuggestion ? (
+                              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            ) : emailError ? (
+                              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              </svg>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Error Message - Mobile friendly */}
+                      {emailError && (
+                        <div className="mt-2 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-red-600 text-xs sm:text-sm flex items-start">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <span className="flex-1">{emailError}</span>
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Email Suggestion - Mobile optimized with larger touch target */}
+                      {emailSuggestion && (
+                        <div className="mt-2 p-3 sm:p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg shadow-sm animate-fade-in">
+                          <p className="text-xs sm:text-sm text-yellow-800 mb-2.5 flex items-center font-medium">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            Did you mean:
+                          </p>
+                          <button
+                            type="button"
+                            onClick={acceptEmailSuggestion}
+                            className="w-full text-left px-3 sm:px-4 py-3 sm:py-3.5 bg-white border-2 border-yellow-400 rounded-lg hover:bg-yellow-50 active:bg-yellow-100 transition-colors text-sparkle-blue font-semibold text-sm sm:text-base shadow-sm flex items-center justify-between group"
+                          >
+                            <span className="break-all">{emailSuggestion}</span>
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0 ml-2 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          <p className="text-xs text-yellow-700 mt-2 text-center">Tap to use this email</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <input 
+                      type="tel" 
+                      name="phone" 
+                      placeholder="Phone Number" 
+                      value={bookingDetails.phone} 
+                      onChange={handleBookingChange} 
+                      inputMode="tel"
+                      autoComplete="tel"
+                      className="w-full p-3 sm:p-4 text-base sm:text-lg rounded-lg bg-gray-100 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sparkle-green mb-4" 
+                    />
                     
                     {/* Payment Method Selection */}
                     <div className="mb-4">
