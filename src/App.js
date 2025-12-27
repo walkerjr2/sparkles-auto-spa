@@ -6,6 +6,7 @@ import CustomerDashboard from './CustomerDashboard';
 import PromoPage from './PromoPage';
 import AdminPage from './AdminPage';
 import SuperAdminLogs from './SuperAdminLogs';
+import BookingForensics from './BookingForensics';
 import { useRef } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
@@ -15,6 +16,16 @@ import Autocomplete from 'react-google-autocomplete';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import BackButton from './BackButton';
 import { migrateWorkers } from './migrateWorkers';
+import { 
+  logBookingAttempt, 
+  logValidationFailure, 
+  logFirebaseError, 
+  logEmailError, 
+  BOOKING_STATUS,
+  trackFieldInteraction,
+  trackClick,
+  initFormTracking
+} from './utils/bookingLogger';
 
 // Loading Animation Component
 const LoadingAnimation = () => {
@@ -409,6 +420,11 @@ const App = () => {
 
   const handleBookingChange = (e) => {
     const { name, value } = e.target;
+    
+    // Track field interaction
+    trackFieldInteraction(name, 'complete');
+    trackClick(name + '-input');
+    
     setBookingDetails(prev => ({ ...prev, [name]: value }));
     
     // Reset email validation when email changes
@@ -418,15 +434,45 @@ const App = () => {
       setEmailSuggestion('');
     }
   };
+  
+  // Initialize form tracking when booking page loads
+  useEffect(() => {
+    if (currentPage === 'book') {
+      initFormTracking();
+    }
+  }, [currentPage]);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (loading) {
+      console.log('Already submitting, ignoring duplicate submission');
+      return;
+    }
+    
+    // Track API response times
+    const apiTimes = {};
+    
+    // 🔬 LOG: User clicked submit button (non-blocking)
+    trackClick('submit-button');
+    logBookingAttempt({
+      status: BOOKING_STATUS.BUTTON_CLICKED,
+      bookingData: bookingDetails,
+      additionalInfo: {
+        message: 'User clicked submit booking button'
+      }
+    }).catch(err => console.log('Logging error:', err));
     
     // Validate email before submission
     const emailValidation = validateEmail(bookingDetails.email);
     if (!emailValidation.valid) {
       setEmailError(emailValidation.error);
       setEmailValid(false);
+      
+      // 🔬 LOG: Validation failed (non-blocking)
+      logValidationFailure(bookingDetails, ['email']).catch(err => console.log('Logging error:', err));
+      
       alert('Please enter a valid email address before submitting.');
       setLoading(false);
       return;
@@ -441,12 +487,77 @@ const App = () => {
         setBookingDetails(prev => ({ ...prev, email: emailValidation.suggestion }));
         // Update the booking with corrected email
         bookingDetails.email = emailValidation.suggestion;
+        setEmailError('');
+        setEmailValid(true);
+        
+        // 🔬 LOG: User accepted email correction (non-blocking)
+        logBookingAttempt({
+          status: BOOKING_STATUS.BUTTON_CLICKED,
+          bookingData: bookingDetails,
+          additionalInfo: {
+            message: 'User accepted email typo correction',
+            originalEmail: emailValidation.suggestion
+          }
+        }).catch(err => console.log('Logging error:', err));
+      } else {
+        // 🔬 LOG: User rejected email correction (non-blocking)
+        logBookingAttempt({
+          status: BOOKING_STATUS.BUTTON_CLICKED,
+          bookingData: bookingDetails,
+          additionalInfo: {
+            message: 'User rejected email typo correction',
+            suggestedEmail: emailValidation.suggestion
+          }
+        }).catch(err => console.log('Logging error:', err));
       }
     }
     
     setLoading(true);
 
+    // Validate all required fields before submission
+    const requiredFields = {
+      service: bookingDetails.service,
+      vehicleSize: bookingDetails.vehicleSize,
+      location: bookingDetails.location,
+      date: bookingDetails.date,
+      time: bookingDetails.time,
+      name: bookingDetails.name,
+      email: bookingDetails.email,
+      phone: bookingDetails.phone,
+      paymentMethod: bookingDetails.paymentMethod
+    };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([key, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      console.error('Missing required fields:', missingFields);
+      alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      setLoading(false);
+      return;
+    }
+
+    console.log('Submitting booking with data:', bookingDetails);
+
     try {
+      // Check if Firebase is properly initialized
+      if (!db) {
+        throw new Error('Firebase database not initialized. Please refresh the page.');
+      }
+
+      // Check internet connectivity
+      if (!navigator.onLine) {
+        throw new Error('No internet connection. Please check your connection and try again.');
+      }
+
+      // 🔬 LOG: Starting Firebase save (non-blocking)
+      const firebaseStartTime = Date.now();
+      logBookingAttempt({
+        status: BOOKING_STATUS.FIREBASE_STARTED,
+        bookingData: bookingDetails
+      }).catch(err => console.log('Logging error:', err));
+      
       // Save booking to Firestore with real-time sync
       const bookingData = {
         service: bookingDetails.service,
@@ -465,7 +576,22 @@ const App = () => {
         createdAt: serverTimestamp(),
       };
 
+      console.log('Attempting to save to Firebase with data:', bookingData);
+      
       const docRef = await addDoc(collection(db, 'bookings'), bookingData);
+      console.log('Firebase save successful! Booking ID:', docRef.id);
+      
+      apiTimes.firebase = `${Date.now() - firebaseStartTime}ms`;
+
+      // 🔬 LOG: Firebase save successful (non-blocking)
+      logBookingAttempt({
+        status: BOOKING_STATUS.FIREBASE_SUCCESS,
+        bookingData: bookingDetails,
+        additionalInfo: {
+          bookingId: docRef.id
+        },
+        apiResponseTimes: apiTimes
+      }).catch(err => console.log('Logging error:', err));
 
       // Prepare email parameters with Google Maps links
       const mapsUrl = bookingDetails.lat && bookingDetails.lng 
@@ -487,27 +613,96 @@ const App = () => {
         bookingId: docRef.id,
       };
 
-      // Send business notification
-      await emailjs.send(
-        'service_wamhblr',
-        'template_kvbn3sg',
-        { ...templateParams, to_email: 'sparklesautospa01@gmail.com' },
-        '45y0OsA7oxKrQg63X'
-      );
+      // 🔬 LOG: Starting email send (non-blocking)
+      logBookingAttempt({
+        status: BOOKING_STATUS.EMAIL_STARTED,
+        bookingData: bookingDetails,
+        additionalInfo: {
+          bookingId: docRef.id,
+          emailsToSend: 2
+        },
+        apiResponseTimes: apiTimes
+      }).catch(err => console.log('Logging error:', err));
 
-      // Send customer confirmation
-      await emailjs.send(
-        'service_wamhblr',
-        'template_4c7li4m',
-        { ...templateParams, to_email: bookingDetails.email },
-        '45y0OsA7oxKrQg63X'
-      );
+      // Send business notification
+      const emailStartTime = Date.now();
+      
+      try {
+        await emailjs.send(
+          'service_wamhblr',
+          'template_kvbn3sg',
+          { ...templateParams, to_email: 'sparklesautospa01@gmail.com' },
+          '45y0OsA7oxKrQg63X'
+        );
+
+        // Send customer confirmation
+        await emailjs.send(
+          'service_wamhblr',
+          'template_4c7li4m',
+          { ...templateParams, to_email: bookingDetails.email },
+          '45y0OsA7oxKrQg63X'
+        );
+        apiTimes.emailjs = `${Date.now() - emailStartTime}ms`;
+
+        // 🔬 LOG: Email send successful (non-blocking)
+        logBookingAttempt({
+          status: BOOKING_STATUS.EMAIL_SUCCESS,
+          bookingData: bookingDetails,
+          additionalInfo: {
+            bookingId: docRef.id,
+            emailsSent: 2
+          },
+          apiResponseTimes: apiTimes
+        }).catch(err => console.log('Logging error:', err));
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        apiTimes.emailjs = `${Date.now() - emailStartTime}ms (failed)`;
+        
+        // Log email error but don't fail the booking
+        logEmailError(bookingDetails, emailError, docRef.id).catch(err => console.log('Logging error:', err));
+        
+        // Still consider booking complete even if email fails
+        console.warn('Booking saved but emails failed to send');
+      }
+
+      // 🔬 LOG: BOOKING COMPLETE - EVERYTHING WORKED! (non-blocking)
+      logBookingAttempt({
+        status: BOOKING_STATUS.BOOKING_COMPLETE,
+        bookingData: bookingDetails,
+        additionalInfo: {
+          bookingId: docRef.id,
+          message: 'Booking completed successfully - all steps passed'
+        },
+        apiResponseTimes: apiTimes
+      }).catch(err => console.log('Logging error:', err));
 
       setLoading(false);
+      setBookingStep(6); // Move to confirmation step
       setShowModal(true);
     } catch (error) {
       console.error('Booking error:', error);
-      alert('Failed to complete booking. Please try again.');
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code
+      });
+      
+      // 🔬 LOG: Error occurred (non-blocking)
+      if (error.message?.includes('emailjs') || error.text) {
+        // Email error
+        logEmailError(bookingDetails, error, 'unknown').catch(err => console.log('Logging error:', err));
+        alert(`Failed to send confirmation emails: ${error.message || error.text}\n\nYour booking may have been saved. Please contact us to confirm.`);
+      } else if (error.message?.includes('Firebase') || error.code?.startsWith('auth/') || error.code?.startsWith('firestore/')) {
+        // Firebase or other error
+        logFirebaseError(bookingDetails, error).catch(err => console.log('Logging error:', err));
+        alert(`Failed to save booking: ${error.message}\n\nPlease check your internet connection and try again.`);
+      } else {
+        // Unknown error
+        logFirebaseError(bookingDetails, error).catch(err => console.log('Logging error:', err));
+        alert(`Failed to complete booking: ${error.message || 'Unknown error'}\n\nPlease try again or contact support.`);
+      }
+      
       setLoading(false);
     }
   };
@@ -1769,8 +1964,7 @@ const App = () => {
                     <div className="flex justify-between mt-6">
                       <button type="button" onClick={() => setBookingStep(4)} className="px-6 py-3 bg-gray-300 text-gray-800 rounded-full hover:bg-gray-400 transition-colors">Back</button>
                       <button
-                        type="button"
-                        onClick={() => setBookingStep(6)}
+                        type="submit"
                         disabled={!bookingDetails.name || !bookingDetails.email || !bookingDetails.phone || !bookingDetails.paymentMethod}
                         className="px-6 py-3 bg-sparkle-blue text-white font-semibold rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50"
                       >
@@ -2225,6 +2419,10 @@ const App = () => {
         <Route
           path="/super-admin-logs"
           element={<SuperAdminLogs />}
+        />
+        <Route
+          path="/booking-forensics"
+          element={<BookingForensics />}
         />
         <Route
           path="/login"

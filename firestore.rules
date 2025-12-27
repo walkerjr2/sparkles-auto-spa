@@ -2,9 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Bookings collection - Allow authenticated users to manage their bookings
+    // Bookings collection - Allow anyone to create bookings (for walk-in customers)
+    // Only authenticated users or super admin can read/update/delete
     match /bookings/{bookingId} {
-      allow read, write: if request.auth != null;
+      allow create: if true; // Anyone can create a booking
+      allow read, update, delete: if request.auth != null;
     }
     
     // Workers collection - Allow everyone to read, authenticated users to write
@@ -16,6 +18,13 @@ service cloud.firestore {
     // Audit logs collection - Allow authenticated users to write
     match /audit_logs/{logId} {
       allow read, write: if request.auth != null;
+    }
+    
+    // Booking attempts forensics - Allow anyone to write (for logging), only super admin to read
+    match /booking_attempts/{logId} {
+      allow read: if request.auth != null && request.auth.token.email == 'jrcosroy.walker@gmail.com';
+      allow create: if true; // Anyone can create logs (even non-authenticated users)
+      allow update, delete: if false; // Logs are immutable
     }
     
     // Allow all authenticated users to read/write other collections
