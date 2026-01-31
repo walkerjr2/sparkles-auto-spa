@@ -6,6 +6,14 @@ import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { migrateWorkers } from './migrateWorkers';
 import updateWorkerSchedules from './updateWorkerSchedules';
 import { logActivity, ACTIVITY_TYPES, TARGET_TYPES } from './utils/activityLogger';
+import { 
+  logDriverCreated, 
+  logDriverUpdated, 
+  logDriverDeleted, 
+  logDriverScheduleUpdated,
+  logBookingUpdated,
+  logBookingStatusChanged
+} from './utils/adminAuditLogger';
 
 export default function AdminDashboard() {
   const [bookings, setBookings] = useState([]);
@@ -176,9 +184,9 @@ export default function AdminDashboard() {
         order: Number(workerForm.order)
       };
       
-      await addDoc(collection(db, 'workers'), workerData);
+      const docRef = await addDoc(collection(db, 'workers'), workerData);
       
-      // Log the activity
+      // Log to activity logger (existing)
       await logActivity({
         userEmail: auth.currentUser?.email || 'Unknown',
         action: ACTIVITY_TYPES.CREATE_WORKER,
@@ -189,6 +197,18 @@ export default function AdminDashboard() {
           after: workerData
         },
         description: `Created new worker: ${workerForm.name} with schedule ${workerForm.start}-${workerForm.end}`
+      });
+      
+      // 🔍 NEW: Log to admin audit system
+      await logDriverCreated(docRef.id, {
+        name: workerForm.name,
+        schedule: `${workerForm.start}-${workerForm.end}`,
+        dayOff: workerForm.dayOff,
+        interval: workerForm.interval,
+        active: workerForm.active,
+        bio: workerForm.bio,
+        email: workerForm.email || 'N/A',
+        phone: workerForm.phone || 'N/A',
       });
       
       alert('Worker added successfully!');
@@ -211,7 +231,7 @@ export default function AdminDashboard() {
       
       await updateDoc(doc(db, 'workers', editingWorker.id), updatedData);
       
-      // Log the activity
+      // Log to activity logger (existing)
       await logActivity({
         userEmail: auth.currentUser?.email || 'Unknown',
         action: ACTIVITY_TYPES.UPDATE_WORKER,
@@ -223,6 +243,51 @@ export default function AdminDashboard() {
         },
         description: `Updated worker: ${workerForm.name}`
       });
+      
+      // 🔍 NEW: Log to admin audit system with detailed changes
+      await logDriverUpdated(
+        editingWorker.id,
+        workerForm.name,
+        {
+          name: editingWorker.name,
+          schedule: `${editingWorker.start}-${editingWorker.end}`,
+          dayOff: editingWorker.dayOff,
+          interval: editingWorker.interval,
+          active: editingWorker.active,
+          order: editingWorker.order
+        },
+        {
+          name: updatedData.name,
+          schedule: `${updatedData.start}-${updatedData.end}`,
+          dayOff: updatedData.dayOff,
+          interval: updatedData.interval,
+          active: updatedData.active,
+          order: updatedData.order
+        }
+      );
+      
+      // 🔍 If schedule changed specifically, log that too
+      if (editingWorker.start !== updatedData.start || 
+          editingWorker.end !== updatedData.end || 
+          editingWorker.dayOff !== updatedData.dayOff) {
+        await logDriverScheduleUpdated(
+          editingWorker.id,
+          workerForm.name,
+          {
+            start: editingWorker.start,
+            end: editingWorker.end,
+            dayOff: editingWorker.dayOff,
+            interval: editingWorker.interval
+          },
+          {
+            start: updatedData.start,
+            end: updatedData.end,
+            dayOff: updatedData.dayOff,
+            interval: updatedData.interval
+          },
+          'Schedule updated via admin dashboard'
+        );
+      }
       
       alert('Worker updated successfully!');
       resetWorkerForm();
@@ -242,7 +307,7 @@ export default function AdminDashboard() {
         
         await deleteDoc(doc(db, 'workers', workerId));
         
-        // Log the activity
+        // Log to activity logger (existing)
         await logActivity({
           userEmail: auth.currentUser?.email || 'Unknown',
           action: ACTIVITY_TYPES.DELETE_WORKER,
@@ -253,6 +318,15 @@ export default function AdminDashboard() {
             after: null
           },
           description: `Deleted worker: ${workerName}`
+        });
+        
+        // 🔍 NEW: Log to admin audit system
+        await logDriverDeleted(workerId, {
+          name: workerName,
+          schedule: workerToDelete ? `${workerToDelete.start}-${workerToDelete.end}` : 'Unknown',
+          email: workerToDelete?.email || 'N/A',
+          phone: workerToDelete?.phone || 'N/A',
+          active: workerToDelete?.active
         });
         
         alert('Worker deleted successfully!');
@@ -440,12 +514,14 @@ export default function AdminDashboard() {
               <h1 className="text-2xl sm:text-3xl font-bold text-sparkle-blue mb-1 sm:mb-2">Admin Dashboard</h1>
               <p className="text-sm sm:text-base text-gray-600">Manage all bookings in real-time</p>
             </div>
-            <button
-              onClick={handleBack}
-              className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition-colors text-sm sm:text-base"
-            >
-              🚪 Logout
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <button
+                onClick={handleBack}
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition-colors text-sm sm:text-base"
+              >
+                🚪 Logout
+              </button>
+            </div>
           </div>
         </div>
 

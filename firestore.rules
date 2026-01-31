@@ -27,6 +27,18 @@ service cloud.firestore {
       allow update, delete: if false; // Logs are immutable
     }
     
+    // Admin Audit Log - CRITICAL SECURITY
+    match /admin_audit_log/{logId} {
+      // Only super admin can read audit logs
+      allow read: if request.auth != null && request.auth.token.email == 'jrcosroy.walker@gmail.com';
+      
+      // Any authenticated user can create audit logs (for tracking their own actions)
+      allow create: if request.auth != null;
+      
+      // NEVER allow updates or deletes - audit logs must be immutable
+      allow update, delete: if false;
+    }
+    
     // Allow all authenticated users to read/write other collections
     match /{document=**} {
       allow read, write: if request.auth != null;

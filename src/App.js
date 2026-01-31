@@ -7,6 +7,7 @@ import PromoPage from './PromoPage';
 import AdminPage from './AdminPage';
 import SuperAdminLogs from './SuperAdminLogs';
 import BookingForensics from './BookingForensics';
+import AdminActivityLog from './AdminActivityLog';
 import { useRef } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
@@ -26,6 +27,7 @@ import {
   trackClick,
   initFormTracking
 } from './utils/bookingLogger';
+import posthog from './posthog'; // PostHog for session replay and analytics
 
 // Loading Animation Component
 const LoadingAnimation = () => {
@@ -183,11 +185,21 @@ const App = () => {
   const profileRef = useRef();
   const continueButtonRef = useRef(null);
   const bookingFormRef = useRef(null);
+  
   // Listen for customer login state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setCustomer(user);
+      
+      // PostHog: Identify user when they log in
       if (user) {
+        posthog.identify(user.email, {
+          email: user.email,
+          uid: user.uid,
+          userType: 'customer',
+          displayName: user.displayName || 'Unknown',
+        });
+        
         setBookingsLoading(true);
         const fetchBookings = async () => {
           try {
@@ -205,6 +217,8 @@ const App = () => {
         };
         fetchBookings();
       } else {
+        // PostHog: Reset user when they log out
+        posthog.reset();
         setRecentBookings([]);
       }
     });
@@ -454,6 +468,14 @@ const App = () => {
     // Track API response times
     const apiTimes = {};
     
+    // PostHog: Track booking submission attempt
+    posthog.capture('booking_submit_clicked', {
+      service: bookingDetails.service,
+      vehicleSize: bookingDetails.vehicleSize,
+      hasLocation: !!bookingDetails.location,
+      hasDateTime: !!(bookingDetails.date && bookingDetails.time),
+    });
+    
     // 🔬 LOG: User clicked submit button (non-blocking)
     trackClick('submit-button');
     logBookingAttempt({
@@ -533,10 +555,24 @@ const App = () => {
 
     if (missingFields.length > 0) {
       console.error('Missing required fields:', missingFields);
+      
+      // PostHog: Track validation failure
+      posthog.capture('booking_validation_failed', {
+        missingFields: missingFields,
+        service: bookingDetails.service,
+      });
+      
       alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
       setLoading(false);
       return;
     }
+
+    // PostHog: Track validation success
+    posthog.capture('booking_validation_passed', {
+      service: bookingDetails.service,
+      vehicleSize: bookingDetails.vehicleSize,
+      paymentMethod: bookingDetails.paymentMethod,
+    });
 
     console.log('Submitting booking with data:', bookingDetails);
 
@@ -582,6 +618,15 @@ const App = () => {
       console.log('Firebase save successful! Booking ID:', docRef.id);
       
       apiTimes.firebase = `${Date.now() - firebaseStartTime}ms`;
+
+      // PostHog: Track Firebase save success
+      posthog.capture('booking_saved_to_firebase', {
+        bookingId: docRef.id,
+        service: bookingDetails.service,
+        vehicleSize: bookingDetails.vehicleSize,
+        paymentMethod: bookingDetails.paymentMethod,
+        firebaseTime: apiTimes.firebase,
+      });
 
       // 🔬 LOG: Firebase save successful (non-blocking)
       logBookingAttempt({
@@ -644,6 +689,14 @@ const App = () => {
         );
         apiTimes.emailjs = `${Date.now() - emailStartTime}ms`;
 
+        // PostHog: Track email success
+        posthog.capture('booking_emails_sent', {
+          bookingId: docRef.id,
+          service: bookingDetails.service,
+          emailTime: apiTimes.emailjs,
+          emailsSent: 2,
+        });
+
         // 🔬 LOG: Email send successful (non-blocking)
         logBookingAttempt({
           status: BOOKING_STATUS.EMAIL_SUCCESS,
@@ -657,6 +710,13 @@ const App = () => {
       } catch (emailError) {
         console.error('Email sending failed:', emailError);
         apiTimes.emailjs = `${Date.now() - emailStartTime}ms (failed)`;
+        
+        // PostHog: Track email failure
+        posthog.capture('booking_emails_failed', {
+          bookingId: docRef.id,
+          error: emailError.message || emailError.text,
+          service: bookingDetails.service,
+        });
         
         // Log email error but don't fail the booking
         logEmailError(bookingDetails, emailError, docRef.id).catch(err => console.log('Logging error:', err));
@@ -676,6 +736,17 @@ const App = () => {
         apiResponseTimes: apiTimes
       }).catch(err => console.log('Logging error:', err));
 
+      // PostHog: Track booking completion
+      posthog.capture('booking_completed', {
+        bookingId: docRef.id,
+        service: bookingDetails.service,
+        vehicleSize: bookingDetails.vehicleSize,
+        paymentMethod: bookingDetails.paymentMethod,
+        totalTime: Object.values(apiTimes).join(', '),
+        firebaseTime: apiTimes.firebase,
+        emailTime: apiTimes.emailjs,
+      });
+
       setLoading(false);
       setBookingStep(6); // Move to confirmation step
       setShowModal(true);
@@ -686,6 +757,15 @@ const App = () => {
         stack: error.stack,
         name: error.name,
         code: error.code
+      });
+      
+      // PostHog: Track booking failure
+      posthog.capture('booking_failed', {
+        error: error.message,
+        errorCode: error.code,
+        errorName: error.name,
+        service: bookingDetails.service,
+        step: error.message?.includes('emailjs') ? 'email' : 'firebase',
       });
       
       // 🔬 LOG: Error occurred (non-blocking)
@@ -2423,6 +2503,10 @@ const App = () => {
         <Route
           path="/booking-forensics"
           element={<BookingForensics />}
+        />
+        <Route
+          path="/admin-activity-log"
+          element={<AdminActivityLog />}
         />
         <Route
           path="/login"

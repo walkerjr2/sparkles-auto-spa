@@ -1,5 +1,6 @@
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import posthog from '../posthog'; // Import PostHog
 
 /**
  * Enhanced Comprehensive Booking Attempt Logger
@@ -358,12 +359,30 @@ export const logBookingAttempt = async ({
     // Calculate session duration
     const sessionDuration = Date.now() - new Date(sessionStartTime).getTime();
     
+    // Get PostHog session ID and URL for session replay
+    const posthogSessionId = posthog.get_session_id();
+    const posthogSessionUrl = posthogSessionId 
+      ? `https://app.posthog.com/replay/${posthogSessionId}`
+      : null;
+    
+    // Track event in PostHog
+    posthog.capture('booking_attempt_logged', {
+      status,
+      service: bookingData.service,
+      hasError: !!errorMessage,
+      sessionId,
+    });
+    
     // Create comprehensive log entry
     const logEntry = {
       // Status
       status,
       timestamp: serverTimestamp(),
       timestampISO: new Date().toISOString(),
+      
+      // PostHog Session Replay Link (NEW!)
+      posthogSessionId,
+      posthogSessionUrl,
       
       // Session Tracking
       sessionId,
