@@ -71,28 +71,38 @@ export default function AdminDashboard() {
 
   // Real-time listener for workers
   useEffect(() => {
-    console.log('Setting up workers listener...');
+    console.log('🎧 Setting up workers real-time listener...');
     
     // Try without ordering first to avoid index issues
     const q = collection(db, 'workers');
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('Workers snapshot received, docs count:', snapshot.docs.length);
-      const workersData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      console.log('📡 Workers snapshot received at:', new Date().toLocaleTimeString());
+      console.log('📊 Docs count:', snapshot.docs.length);
+      
+      const workersData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('👷 Worker loaded:', doc.id, data.name);
+        return {
+          id: doc.id,
+          ...data
+        };
+      });
+      
       // Sort manually by order field
       workersData.sort((a, b) => (a.order || 0) - (b.order || 0));
-      console.log('Workers loaded from Firestore:', workersData);
+      console.log('✅ Workers state updated with', workersData.length, 'workers');
       setWorkers(workersData);
     }, (error) => {
-      console.error('Error loading workers:', error);
+      console.error('❌ Error loading workers:', error);
       console.log('This is normal if workers collection does not exist yet. Click "Migrate Workers" button to create it.');
       setWorkers([]);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('🔌 Cleaning up workers listener');
+      unsubscribe();
+    };
   }, []);
 
   // Filter bookings
@@ -222,6 +232,9 @@ export default function AdminDashboard() {
 
   const handleUpdateWorker = async () => {
     try {
+      console.log('🔧 Updating worker:', editingWorker.id, workerForm.name);
+      console.log('📝 Before:', editingWorker);
+      
       const updatedData = {
         ...workerForm,
         interval: Number(workerForm.interval),
@@ -229,7 +242,10 @@ export default function AdminDashboard() {
         order: Number(workerForm.order)
       };
       
+      console.log('📝 After:', updatedData);
+      
       await updateDoc(doc(db, 'workers', editingWorker.id), updatedData);
+      console.log('✅ Firestore update complete');
       
       // Log to activity logger (existing)
       await logActivity({
