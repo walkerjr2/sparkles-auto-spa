@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, orderBy, query, onSnapshot, doc, updateDoc, addDoc, deleteDoc } from 'firebase/firestore';
+import { collection, orderBy, query, onSnapshot, doc, updateDoc, addDoc, deleteDoc, where, getDocs } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { signOut } from 'firebase/auth';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
@@ -193,8 +193,20 @@ export default function AdminDashboard() {
         return;
       }
 
+      // Auto-sort custom slots if they exist
+      let customSlots = workerForm.customSlots;
+      if (customSlots && Array.isArray(customSlots) && customSlots.length > 0) {
+        customSlots = [...customSlots].sort((a, b) => {
+          const [h1, m1] = a.split(':').map(Number);
+          const [h2, m2] = b.split(':').map(Number);
+          return (h1 * 60 + m1) - (h2 * 60 + m2);
+        });
+        console.log('📊 Auto-sorted custom slots:', customSlots);
+      }
+
       const workerData = {
         ...workerForm,
+        customSlots: customSlots,
         interval: Number(workerForm.interval),
         dayOff: Number(workerForm.dayOff),
         order: Number(workerForm.order)
@@ -248,8 +260,20 @@ export default function AdminDashboard() {
         return;
       }
       
+      // Auto-sort custom slots if they exist
+      let customSlots = workerForm.customSlots;
+      if (customSlots && Array.isArray(customSlots) && customSlots.length > 0) {
+        customSlots = [...customSlots].sort((a, b) => {
+          const [h1, m1] = a.split(':').map(Number);
+          const [h2, m2] = b.split(':').map(Number);
+          return (h1 * 60 + m1) - (h2 * 60 + m2);
+        });
+        console.log('📊 Auto-sorted custom slots:', customSlots);
+      }
+      
       const updatedData = {
         ...workerForm,
+        customSlots: customSlots,
         interval: Number(workerForm.interval),
         dayOff: Number(workerForm.dayOff),
         order: Number(workerForm.order)

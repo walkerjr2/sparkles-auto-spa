@@ -1151,6 +1151,25 @@ const App = () => {
       }
     });
 
+    // Sort slots chronologically by converting time back to minutes
+    slots.sort((a, b) => {
+      // Convert "7:00 AM" format back to minutes for sorting
+      const parseTime = (timeStr) => {
+        const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!match) return 0;
+        let hours = parseInt(match[1]);
+        const minutes = parseInt(match[2]);
+        const ampm = match[3].toUpperCase();
+        
+        if (ampm === 'PM' && hours !== 12) hours += 12;
+        if (ampm === 'AM' && hours === 12) hours = 0;
+        
+        return hours * 60 + minutes;
+      };
+      
+      return parseTime(a.time) - parseTime(b.time);
+    });
+
     return slots;
   }
 
