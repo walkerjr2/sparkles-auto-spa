@@ -187,6 +187,12 @@ export default function AdminDashboard() {
   // Worker CRUD operations
   const handleAddWorker = async () => {
     try {
+      // Validate times
+      if (workerForm.start >= workerForm.end) {
+        alert('⚠️ Error: Start time must be before end time!\n\nPlease use morning hours (AM) for start time and afternoon hours (PM) for end time.');
+        return;
+      }
+
       const workerData = {
         ...workerForm,
         interval: Number(workerForm.interval),
@@ -233,7 +239,14 @@ export default function AdminDashboard() {
   const handleUpdateWorker = async () => {
     try {
       console.log('🔧 Updating worker:', editingWorker.id, workerForm.name);
-      console.log('📝 Before:', editingWorker);
+      console.log('📝 BEFORE (current in Firestore):', editingWorker);
+      console.log('📝 FORM STATE (what admin entered):', workerForm);
+      
+      // Validate times
+      if (workerForm.start >= workerForm.end) {
+        alert('⚠️ Error: Start time must be before end time!\n\nPlease use morning hours (AM) for start time and afternoon hours (PM) for end time.\n\nExample:\nStart: 06:30 (6:30 AM)\nEnd: 16:00 (4:00 PM)');
+        return;
+      }
       
       const updatedData = {
         ...workerForm,
@@ -242,7 +255,15 @@ export default function AdminDashboard() {
         order: Number(workerForm.order)
       };
       
-      console.log('📝 After:', updatedData);
+      console.log('📝 AFTER (will be saved):', updatedData);
+      console.log('🔍 WHAT CHANGED:');
+      console.log('  Name:', editingWorker.name, '→', updatedData.name);
+      console.log('  Start Time:', editingWorker.start, '→', updatedData.start);
+      console.log('  End Time:', editingWorker.end, '→', updatedData.end);
+      console.log('  Day Off:', editingWorker.dayOff, '→', updatedData.dayOff);
+      console.log('  Interval:', editingWorker.interval, '→', updatedData.interval);
+      console.log('  Active:', editingWorker.active, '→', updatedData.active);
+      console.log('  Order:', editingWorker.order, '→', updatedData.order);
       
       await updateDoc(doc(db, 'workers', editingWorker.id), updatedData);
       console.log('✅ Firestore update complete');
@@ -354,8 +375,10 @@ export default function AdminDashboard() {
   };
 
   const handleEditWorker = (worker) => {
+    console.log('✏️ EDIT MODAL OPENED for:', worker.name);
+    console.log('📋 Loading worker data:', worker);
     setEditingWorker(worker);
-    setWorkerForm({
+    const formData = {
       name: worker.name,
       bio: worker.bio || '',
       imageUrl: worker.imageUrl || '',
@@ -368,7 +391,9 @@ export default function AdminDashboard() {
       customSlots: worker.customSlots || null,
       active: worker.active !== undefined ? worker.active : true,
       order: worker.order || 0
-    });
+    };
+    console.log('📝 Form initialized with:', formData);
+    setWorkerForm(formData);
     setShowWorkerForm(true);
   };
 
@@ -753,19 +778,66 @@ export default function AdminDashboard() {
                     <input
                       type="time"
                       value={workerForm.start}
-                      onChange={(e) => setWorkerForm({ ...workerForm, start: e.target.value })}
+                      onChange={(e) => {
+                        console.log('⏰ START TIME CHANGED:', e.target.value);
+                        setWorkerForm({ ...workerForm, start: e.target.value });
+                      }}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
                     />
+                    {workerForm.start && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        📅 {(() => {
+                          const [h, m] = workerForm.start.split(':').map(Number);
+                          const hour12 = h % 12 === 0 ? 12 : h % 12;
+                          const ampm = h < 12 ? 'AM' : 'PM';
+                          return `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                        })()}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">End Time *</label>
                     <input
                       type="time"
                       value={workerForm.end}
-                      onChange={(e) => setWorkerForm({ ...workerForm, end: e.target.value })}
+                      onChange={(e) => {
+                        console.log('⏰ END TIME CHANGED:', e.target.value);
+                        setWorkerForm({ ...workerForm, end: e.target.value });
+                      }}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
                     />
+                    {workerForm.end && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        📅 {(() => {
+                          const [h, m] = workerForm.end.split(':').map(Number);
+                          const hour12 = h % 12 === 0 ? 12 : h % 12;
+                          const ampm = h < 12 ? 'AM' : 'PM';
+                          return `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                        })()}
+                      </p>
+                    )}
                   </div>
+                  {/* Time validation warning */}
+                  {workerForm.start && workerForm.end && workerForm.start >= workerForm.end && (
+                    <div className="col-span-2 p-3 bg-red-50 border border-red-300 rounded-lg">
+                      <p className="text-red-700 text-sm font-semibold">
+                        ⚠️ Warning: Start time must be before end time!
+                      </p>
+                      <p className="text-red-600 text-xs mt-1">
+                        Current: {(() => {
+                          const [h1, m1] = workerForm.start.split(':').map(Number);
+                          const hour12_1 = h1 % 12 === 0 ? 12 : h1 % 12;
+                          const ampm1 = h1 < 12 ? 'AM' : 'PM';
+                          return `${hour12_1}:${m1.toString().padStart(2, '0')} ${ampm1}`;
+                        })()} → {(() => {
+                          const [h2, m2] = workerForm.end.split(':').map(Number);
+                          const hour12_2 = h2 % 12 === 0 ? 12 : h2 % 12;
+                          const ampm2 = h2 < 12 ? 'AM' : 'PM';
+                          return `${hour12_2}:${m2.toString().padStart(2, '0')} ${ampm2}`;
+                        })()}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Time Slot Interval (minutes) *</label>
                     <input
@@ -890,7 +962,19 @@ export default function AdminDashboard() {
                           <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                             <div>
                               <span className="text-gray-500 font-semibold">Hours:</span>
-                              <p className="text-gray-800">{worker.start} - {worker.end}</p>
+                              <p className="text-gray-800">
+                                {(() => {
+                                  const [h1, m1] = worker.start.split(':').map(Number);
+                                  const [h2, m2] = worker.end.split(':').map(Number);
+                                  const start12 = `${h1 % 12 === 0 ? 12 : h1 % 12}:${m1.toString().padStart(2, '0')} ${h1 < 12 ? 'AM' : 'PM'}`;
+                                  const end12 = `${h2 % 12 === 0 ? 12 : h2 % 12}:${m2.toString().padStart(2, '0')} ${h2 < 12 ? 'AM' : 'PM'}`;
+                                  return `${start12} - ${end12}`;
+                                })()}
+                                <span className="text-xs text-gray-500 ml-1">({worker.start} - {worker.end})</span>
+                              </p>
+                              {worker.start >= worker.end && (
+                                <p className="text-red-600 text-xs font-semibold mt-1">⚠️ Invalid schedule!</p>
+                              )}
                             </div>
                             <div>
                               <span className="text-gray-500 font-semibold">Interval:</span>

@@ -237,25 +237,36 @@ const App = () => {
 
   // Real-time listener for workers from Firestore
   useEffect(() => {
+    console.log('🎧 [BOOKING FORM] Setting up workers listener...');
     setWorkersLoading(true);
     const unsubscribe = onSnapshot(
       query(collection(db, 'workers'), orderBy('order', 'asc')),
       (snapshot) => {
-        const workersData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        console.log('📡 [BOOKING FORM] Workers data received at:', new Date().toLocaleTimeString());
+        console.log('📊 [BOOKING FORM] Workers count:', snapshot.docs.length);
+        const workersData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('👷 [BOOKING FORM] Worker loaded:', data.name, 'Schedule:', data.start, '-', data.end);
+          return {
+            id: doc.id,
+            ...data
+          };
+        });
         setWorkers(workersData);
         setWorkersLoading(false);
+        console.log('✅ [BOOKING FORM] Workers state updated');
       },
       (error) => {
-        console.error('Error loading workers:', error);
+        console.error('❌ [BOOKING FORM] Error loading workers:', error);
         setWorkersLoading(false);
         // Fallback to empty array if collection doesn't exist yet
         setWorkers([]);
       }
     );
-    return () => unsubscribe();
+    return () => {
+      console.log('🔌 [BOOKING FORM] Cleaning up workers listener');
+      unsubscribe();
+    };
   }, []);
 
   // Real-time listener for booked slots
@@ -1058,6 +1069,14 @@ const App = () => {
   }
   function getAvailableSlots(dateStr) {
     if (!dateStr) return [];
+    console.log('🕐 [SLOTS] Calculating available slots for:', dateStr);
+    console.log('👥 [SLOTS] Current workers:', workers.length);
+    console.log('📋 [SLOTS] Worker schedules:', workerSchedules.map(w => ({ 
+      name: w.name, 
+      start: w.start, 
+      end: w.end 
+    })));
+    
     const dayOfWeek = getLocalDayOfWeek(dateStr); // 0=Sunday, 1=Monday, ...
     const slots = [];
 
