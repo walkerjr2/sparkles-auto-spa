@@ -472,59 +472,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // One-time: Update Nick's start time to 7:30 AM and adjust custom slots
-  const handleUpdateNickStart = async () => {
-    if (!window.confirm('Update Nick\'s start time to 7:30 AM?\n\nNew custom slots:\n7:30 AM, 8:30 AM, 10:00 AM, 11:30 AM, 1:00 PM, 2:30 PM, 4:00 PM')) {
-      return;
-    }
-
-    try {
-      const workersRef = collection(db, 'workers');
-      const q = query(workersRef, where('name', '==', 'Nick'));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        alert('❌ Nick not found in workers collection');
-        return;
-      }
-
-      const nickDoc = querySnapshot.docs[0];
-      const nickId = nickDoc.id;
-      const currentData = nickDoc.data();
-
-      const updatedFields = {
-        start: '07:30',
-        customSlots: ['07:30', '08:30', '10:00', '11:30', '13:00', '14:30', '16:00']
-      };
-
-      await updateDoc(doc(db, 'workers', nickId), updatedFields);
-
-      await logActivity({
-        userEmail: auth.currentUser?.email || 'Unknown',
-        action: ACTIVITY_TYPES.UPDATE_WORKER,
-        targetType: TARGET_TYPES.WORKER,
-        targetName: 'Nick',
-        changes: {
-          before: { start: currentData.start, customSlots: currentData.customSlots },
-          after: updatedFields
-        },
-        description: 'Updated Nick\'s start time to 7:30 AM'
-      });
-
-      await logDriverUpdated(
-        nickId,
-        currentData,
-        { ...currentData, ...updatedFields },
-        'Updated start time to 7:30 AM'
-      );
-
-      alert('✅ Nick\'s start time updated to 7:30 AM!\n\nNew booking times:\n7:30 AM\n8:30 AM\n10:00 AM\n11:30 AM\n1:00 PM\n2:30 PM\n4:00 PM');
-    } catch (error) {
-      console.error('Error updating Nick start time:', error);
-      alert('Failed to update: ' + error.message);
-    }
-  };
-
   // Stats calculation
   const stats = {
     total: bookings.length,
@@ -800,12 +747,6 @@ export default function AdminDashboard() {
                     🔄 Migrate Workers
                   </button>
                 )}
-                <button
-                  onClick={handleUpdateNickStart}
-                  className="px-3 sm:px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors text-sm sm:text-base whitespace-nowrap"
-                >
-                  🕐 Update Nick's Start
-                </button>
                 <button
                   onClick={() => {
                     resetWorkerForm();
