@@ -15,6 +15,12 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
     
+    // Service prices - Allow everyone to read (for booking form), authenticated users to write
+    match /service_prices/{priceId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
     // Audit logs collection - Allow authenticated users to write
     match /audit_logs/{logId} {
       allow read, write: if request.auth != null;

@@ -269,6 +269,27 @@ const App = () => {
     };
   }, []);
 
+  // Real-time listener for service prices from Firestore
+  const [firestorePrices, setFirestorePrices] = useState({});
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'service_prices'),
+      (snapshot) => {
+        const prices = {};
+        snapshot.docs.forEach(docSnap => {
+          const data = docSnap.data();
+          prices[data.name] = { price: data.price, priceLabel: data.priceLabel };
+        });
+        setFirestorePrices(prices);
+        console.log('💰 [BOOKING FORM] Service prices loaded:', Object.keys(prices).length);
+      },
+      (error) => {
+        console.error('Error loading service prices:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
   // Real-time listener for booked slots
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -967,52 +988,58 @@ const App = () => {
   ];
 
   // The comprehensive list of services provided by the user, categorized for clarity.
+  // Prices are dynamically merged from Firestore when available, with hardcoded fallbacks.
+  const getServicePrice = (name, fallback) => {
+    if (firestorePrices[name]) return firestorePrices[name].priceLabel || fallback;
+    return fallback;
+  };
+
   const services = [
     {
       category: 'Wash and Vac',
       items: [
-        { id: 1, name: 'Wash and Vac (Small Car)', price: '$2,000', details: ['Vehicles like Vitz & Fit'] },
-        { id: 2, name: 'Wash and Vac (Sedan)', price: '$2,200', details: ['Vehicles like Toyota Crown & Mark X'] },
-        { id: 3, name: 'Wash and Vac (Small SUV)', price: '$2,800', details: ['Vehicles like HRV'] },
-        { id: 4, name: 'Wash and Vac (Medium SUV)', price: '$3,000', details: ['Vehicles like CRV, RAV4'] },
-        { id: 5, name: 'Wash and Vac (Large SUV)', price: '$3,500', details: ['Vehicles like Prado, Land Cruiser'] },
-        { id: 6, name: 'Wash and Vac (Small Bus)', price: '$3,500', details: ['Vehicles like Voxy, Minivan, Pick up'] },
-        { id: 7, name: 'Wash and Vac (Large Bus)', price: '$4,500', details: ['Vehicles like Large Hiace, Large Pick up'] },
-  { id: 31, name: 'Wash and Vac (Pickup)', price: 'Starts at $4,000', details: ['Price varies by pickup size'] },
-        { id: 8, name: 'Wash and Vac (Extra Large Bus)', price: '$5,000', details: ['Vehicles like Coaster'] },
-        { id: 9, name: 'Wash and Vac (Small Truck)', price: '$6,000', details: ['Vehicles like Elf, Isuzu'] },
-        { id: 9, name: 'Wash and Vac (Large Truck)', price: '$7,000', details: ['Vehicles like Isuzu'] },
-        { id: 10, name: 'Wash and Vac (Trailer Head)', price: '$6,000', details: [] },
-        { id: 11, name: 'Wash and Vac (Trailer Front & Back)', price: '$15,000', details: [] },
-        { id: 12, name: 'Wash and Vac (Dumper Truck)', price: '$13,000', details: [] },
-        { id: 13, name: 'Wash and Vac (Tracker & Backhoe)', price: '$15,000', details: [] },
+        { id: 1, name: 'Wash and Vac (Small Car)', price: getServicePrice('Wash and Vac (Small Car)', '$2,000'), details: ['Vehicles like Vitz & Fit'] },
+        { id: 2, name: 'Wash and Vac (Sedan)', price: getServicePrice('Wash and Vac (Sedan)', '$2,200'), details: ['Vehicles like Toyota Crown & Mark X'] },
+        { id: 3, name: 'Wash and Vac (Small SUV)', price: getServicePrice('Wash and Vac (Small SUV)', '$2,800'), details: ['Vehicles like HRV'] },
+        { id: 4, name: 'Wash and Vac (Medium SUV)', price: getServicePrice('Wash and Vac (Medium SUV)', '$3,000'), details: ['Vehicles like CRV, RAV4'] },
+        { id: 5, name: 'Wash and Vac (Large SUV)', price: getServicePrice('Wash and Vac (Large SUV)', '$3,500'), details: ['Vehicles like Prado, Land Cruiser'] },
+        { id: 6, name: 'Wash and Vac (Small Bus)', price: getServicePrice('Wash and Vac (Small Bus)', '$3,500'), details: ['Vehicles like Voxy, Minivan, Pick up'] },
+        { id: 7, name: 'Wash and Vac (Large Bus)', price: getServicePrice('Wash and Vac (Large Bus)', '$4,500'), details: ['Vehicles like Large Hiace, Large Pick up'] },
+        { id: 31, name: 'Wash and Vac (Pickup)', price: getServicePrice('Wash and Vac (Pickup)', 'Starts at $4,000'), details: ['Price varies by pickup size'] },
+        { id: 8, name: 'Wash and Vac (Extra Large Bus)', price: getServicePrice('Wash and Vac (Extra Large Bus)', '$5,000'), details: ['Vehicles like Coaster'] },
+        { id: 9, name: 'Wash and Vac (Small Truck)', price: getServicePrice('Wash and Vac (Small Truck)', '$6,000'), details: ['Vehicles like Elf, Isuzu'] },
+        { id: 32, name: 'Wash and Vac (Large Truck)', price: getServicePrice('Wash and Vac (Large Truck)', '$7,000'), details: ['Vehicles like Isuzu'] },
+        { id: 10, name: 'Wash and Vac (Trailer Head)', price: getServicePrice('Wash and Vac (Trailer Head)', '$6,000'), details: [] },
+        { id: 11, name: 'Wash and Vac (Trailer Front & Back)', price: getServicePrice('Wash and Vac (Trailer Front & Back)', '$15,000'), details: [] },
+        { id: 12, name: 'Wash and Vac (Dumper Truck)', price: getServicePrice('Wash and Vac (Dumper Truck)', '$13,000'), details: [] },
+        { id: 13, name: 'Wash and Vac (Tracker & Backhoe)', price: getServicePrice('Wash and Vac (Tracker & Backhoe)', '$15,000'), details: [] },
       ],
     },
     {
       category: 'Detailing',
       items: [
-        { id: 14, name: 'Seat Only Detail', price: 'Starts at $15,000', details: [] },
-        { id: 15, name: 'Full Interior Detail', price: 'Starts at $25,000', details: ['Includes seats, roof, and doors'] },
-        { id: 16, name: 'Full Interior Detail (with seat removal)', price: 'Starts at $35,000', details: [] },
-        { id: 17, name: 'Headlight Restoration', price: 'Starts at $3,000', details: [] },
-        { id: 18, name: 'Plastic Restoration', price: 'Starts at $3,000', details: [] },
-        { id: 19, name: 'Buff and Polish', price: 'Starts at $30,000', details: [] },
-        { id: 20, name: 'Undercarriage Wash', price: 'Starts at $3,000', details: [] },
-        { id: 21, name: 'Engine Wash', price: 'Starts at $3,000', details: [] },
-        { id: 22, name: 'Leather Interior Detail', price: 'Starts at $10,000', details: [] },
-        { id: 23, name: 'Steam Cleaning Car Seat', price: 'Starts at $15,000', details: [] },
-        { id: 24, name: 'Steam Clean Sofa', price: 'Starts at $15,000', details: [] },
+        { id: 14, name: 'Seat Only Detail', price: getServicePrice('Seat Only Detail', 'Starts at $15,000'), details: [] },
+        { id: 15, name: 'Full Interior Detail', price: getServicePrice('Full Interior Detail', 'Starts at $25,000'), details: ['Includes seats, roof, and doors'] },
+        { id: 16, name: 'Full Interior Detail (with seat removal)', price: getServicePrice('Full Interior Detail (with seat removal)', 'Starts at $35,000'), details: [] },
+        { id: 17, name: 'Headlight Restoration', price: getServicePrice('Headlight Restoration', 'Starts at $3,000'), details: [] },
+        { id: 18, name: 'Plastic Restoration', price: getServicePrice('Plastic Restoration', 'Starts at $3,000'), details: [] },
+        { id: 19, name: 'Buff and Polish', price: getServicePrice('Buff and Polish', 'Starts at $30,000'), details: [] },
+        { id: 20, name: 'Undercarriage Wash', price: getServicePrice('Undercarriage Wash', 'Starts at $3,000'), details: [] },
+        { id: 21, name: 'Engine Wash', price: getServicePrice('Engine Wash', 'Starts at $3,000'), details: [] },
+        { id: 22, name: 'Leather Interior Detail', price: getServicePrice('Leather Interior Detail', 'Starts at $10,000'), details: [] },
+        { id: 23, name: 'Steam Cleaning Car Seat', price: getServicePrice('Steam Cleaning Car Seat', 'Starts at $15,000'), details: [] },
+        { id: 24, name: 'Steam Clean Sofa', price: getServicePrice('Steam Clean Sofa', 'Starts at $15,000'), details: [] },
       ],
     },
     {
       category: 'Specialty Cleaning',
       items: [
-        { id: 25, name: 'Wall Cleaning', price: 'Please call for quote', details: [] },
-        { id: 26, name: 'Building Roof Cleaning', price: 'Starts at $15,000', details: [] },
-        { id: 27, name: 'Driveway Cleaning', price: 'Starts at $10,000', details: [] },
-        { id: 28, name: 'Carpet Cleaning', price: 'Starts at $5,000', details: [] },
-        { id: 29, name: 'Sofa Cleaning', price: 'Starts at $10,000', details: [] },
-        { id: 30, name: 'Mattress Cleaning', price: 'Starts at $10,000', details: [] },
+        { id: 25, name: 'Wall Cleaning', price: getServicePrice('Wall Cleaning', 'Please call for quote'), details: [] },
+        { id: 26, name: 'Building Roof Cleaning', price: getServicePrice('Building Roof Cleaning', 'Starts at $15,000'), details: [] },
+        { id: 27, name: 'Driveway Cleaning', price: getServicePrice('Driveway Cleaning', 'Starts at $10,000'), details: [] },
+        { id: 28, name: 'Carpet Cleaning', price: getServicePrice('Carpet Cleaning', 'Starts at $5,000'), details: [] },
+        { id: 29, name: 'Sofa Cleaning', price: getServicePrice('Sofa Cleaning', 'Starts at $10,000'), details: [] },
+        { id: 30, name: 'Mattress Cleaning', price: getServicePrice('Mattress Cleaning', 'Starts at $10,000'), details: [] },
       ],
     },
   ];

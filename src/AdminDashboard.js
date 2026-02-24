@@ -27,6 +27,13 @@ export default function AdminDashboard() {
   const [showMonthlySummary, setShowMonthlySummary] = useState(false);
   const [priceEdits, setPriceEdits] = useState({});
   
+  // Service pricing management states
+  const [showPriceManagement, setShowPriceManagement] = useState(false);
+  const [servicePrices, setServicePrices] = useState({});
+  const [priceFormEdits, setPriceFormEdits] = useState({});
+  const [savingPrices, setSavingPrices] = useState(false);
+  const [priceSearchQuery, setPriceSearchQuery] = useState('');
+
   // Worker management states
   const [workers, setWorkers] = useState([]);
   const [showWorkerManagement, setShowWorkerManagement] = useState(false);
@@ -103,6 +110,27 @@ export default function AdminDashboard() {
       console.log('🔌 Cleaning up workers listener');
       unsubscribe();
     };
+  }, []);
+
+  // Real-time listener for service prices
+  useEffect(() => {
+    const q = collection(db, 'service_prices');
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const prices = {};
+      snapshot.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        prices[data.name] = {
+          id: docSnap.id,
+          ...data
+        };
+      });
+      setServicePrices(prices);
+      console.log('💰 Service prices loaded:', Object.keys(prices).length, 'services');
+    }, (error) => {
+      console.error('Error loading service prices:', error);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Filter bookings
@@ -185,6 +213,32 @@ export default function AdminDashboard() {
   };
 
   // Worker CRUD operations
+  // Helper: Generate custom slots from start, end, interval
+  const generateCustomSlots = (start, end, interval) => {
+    const slots = [];
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    let current = sh * 60 + sm;
+    const endMin = eh * 60 + em;
+    const intMin = Number(interval);
+
+    while (current + intMin <= endMin) {
+      const h = Math.floor(current / 60);
+      const m = current % 60;
+      slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      current += intMin;
+    }
+    // Also push the last slot at the boundary if it fits exactly
+    if (current === endMin) {
+      const h = Math.floor(current / 60);
+      const m = current % 60;
+      slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+    }
+
+    console.log(`📊 Generated ${slots.length} custom slots from ${start} to ${end} every ${interval} min:`, slots);
+    return slots;
+  };
+
   const handleAddWorker = async () => {
     try {
       // Validate times
@@ -193,16 +247,8 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Auto-sort custom slots if they exist
-      let customSlots = workerForm.customSlots;
-      if (customSlots && Array.isArray(customSlots) && customSlots.length > 0) {
-        customSlots = [...customSlots].sort((a, b) => {
-          const [h1, m1] = a.split(':').map(Number);
-          const [h2, m2] = b.split(':').map(Number);
-          return (h1 * 60 + m1) - (h2 * 60 + m2);
-        });
-        console.log('📊 Auto-sorted custom slots:', customSlots);
-      }
+      // Always regenerate custom slots from start/end/interval so booking form stays in sync
+      const customSlots = generateCustomSlots(workerForm.start, workerForm.end, workerForm.interval);
 
       const workerData = {
         ...workerForm,
@@ -260,16 +306,8 @@ export default function AdminDashboard() {
         return;
       }
       
-      // Auto-sort custom slots if they exist
-      let customSlots = workerForm.customSlots;
-      if (customSlots && Array.isArray(customSlots) && customSlots.length > 0) {
-        customSlots = [...customSlots].sort((a, b) => {
-          const [h1, m1] = a.split(':').map(Number);
-          const [h2, m2] = b.split(':').map(Number);
-          return (h1 * 60 + m1) - (h2 * 60 + m2);
-        });
-        console.log('📊 Auto-sorted custom slots:', customSlots);
-      }
+      // Always regenerate custom slots from start/end/interval so booking form stays in sync
+      const customSlots = generateCustomSlots(workerForm.start, workerForm.end, workerForm.interval);
       
       const updatedData = {
         ...workerForm,
@@ -472,6 +510,237 @@ export default function AdminDashboard() {
     }
   };
 
+  // ==========================================
+  // SERVICE PRICING MANAGEMENT
+  // ==========================================
+
+  // Default services list (used for initial setup and as reference)
+  const defaultServices = [
+    // Wash and Vac
+    { name: 'Wash and Vac (Small Car)', category: 'Wash and Vac', price: 2000, priceLabel: '$2,000', details: 'Vehicles like Vitz & Fit' },
+    { name: 'Wash and Vac (Sedan)', category: 'Wash and Vac', price: 2200, priceLabel: '$2,200', details: 'Vehicles like Toyota Crown & Mark X' },
+    { name: 'Wash and Vac (Small SUV)', category: 'Wash and Vac', price: 2800, priceLabel: '$2,800', details: 'Vehicles like HRV' },
+    { name: 'Wash and Vac (Medium SUV)', category: 'Wash and Vac', price: 3000, priceLabel: '$3,000', details: 'Vehicles like CRV, RAV4' },
+    { name: 'Wash and Vac (Large SUV)', category: 'Wash and Vac', price: 3500, priceLabel: '$3,500', details: 'Vehicles like Prado, Land Cruiser' },
+    { name: 'Wash and Vac (Small Bus)', category: 'Wash and Vac', price: 3500, priceLabel: '$3,500', details: 'Vehicles like Voxy, Minivan, Pick up' },
+    { name: 'Wash and Vac (Large Bus)', category: 'Wash and Vac', price: 4500, priceLabel: '$4,500', details: 'Vehicles like Large Hiace, Large Pick up' },
+    { name: 'Wash and Vac (Pickup)', category: 'Wash and Vac', price: 4000, priceLabel: 'Starts at $4,000', details: 'Price varies by pickup size' },
+    { name: 'Wash and Vac (Extra Large Bus)', category: 'Wash and Vac', price: 5000, priceLabel: '$5,000', details: 'Vehicles like Coaster' },
+    { name: 'Wash and Vac (Small Truck)', category: 'Wash and Vac', price: 6000, priceLabel: '$6,000', details: 'Vehicles like Elf, Isuzu' },
+    { name: 'Wash and Vac (Large Truck)', category: 'Wash and Vac', price: 7000, priceLabel: '$7,000', details: 'Vehicles like Isuzu' },
+    { name: 'Wash and Vac (Trailer Head)', category: 'Wash and Vac', price: 6000, priceLabel: '$6,000', details: '' },
+    { name: 'Wash and Vac (Trailer Front & Back)', category: 'Wash and Vac', price: 15000, priceLabel: '$15,000', details: '' },
+    { name: 'Wash and Vac (Dumper Truck)', category: 'Wash and Vac', price: 13000, priceLabel: '$13,000', details: '' },
+    { name: 'Wash and Vac (Tracker & Backhoe)', category: 'Wash and Vac', price: 15000, priceLabel: '$15,000', details: '' },
+    // Detailing
+    { name: 'Seat Only Detail', category: 'Detailing', price: 15000, priceLabel: 'Starts at $15,000', details: '' },
+    { name: 'Full Interior Detail', category: 'Detailing', price: 25000, priceLabel: 'Starts at $25,000', details: 'Includes seats, roof, and doors' },
+    { name: 'Full Interior Detail (with seat removal)', category: 'Detailing', price: 35000, priceLabel: 'Starts at $35,000', details: '' },
+    { name: 'Headlight Restoration', category: 'Detailing', price: 3000, priceLabel: 'Starts at $3,000', details: '' },
+    { name: 'Plastic Restoration', category: 'Detailing', price: 3000, priceLabel: 'Starts at $3,000', details: '' },
+    { name: 'Buff and Polish', category: 'Detailing', price: 30000, priceLabel: 'Starts at $30,000', details: '' },
+    { name: 'Undercarriage Wash', category: 'Detailing', price: 3000, priceLabel: 'Starts at $3,000', details: '' },
+    { name: 'Engine Wash', category: 'Detailing', price: 3000, priceLabel: 'Starts at $3,000', details: '' },
+    { name: 'Leather Interior Detail', category: 'Detailing', price: 10000, priceLabel: 'Starts at $10,000', details: '' },
+    { name: 'Steam Cleaning Car Seat', category: 'Detailing', price: 15000, priceLabel: 'Starts at $15,000', details: '' },
+    { name: 'Steam Clean Sofa', category: 'Detailing', price: 15000, priceLabel: 'Starts at $15,000', details: '' },
+    // Specialty Cleaning
+    { name: 'Wall Cleaning', category: 'Specialty Cleaning', price: 0, priceLabel: 'Please call for quote', details: '' },
+    { name: 'Building Roof Cleaning', category: 'Specialty Cleaning', price: 15000, priceLabel: 'Starts at $15,000', details: '' },
+    { name: 'Driveway Cleaning', category: 'Specialty Cleaning', price: 10000, priceLabel: 'Starts at $10,000', details: '' },
+    { name: 'Carpet Cleaning', category: 'Specialty Cleaning', price: 5000, priceLabel: 'Starts at $5,000', details: '' },
+    { name: 'Sofa Cleaning', category: 'Specialty Cleaning', price: 10000, priceLabel: 'Starts at $10,000', details: '' },
+    { name: 'Mattress Cleaning', category: 'Specialty Cleaning', price: 10000, priceLabel: 'Starts at $10,000', details: '' },
+  ];
+
+  // Initialize prices in Firestore (one-time setup)
+  const handleInitializePrices = async () => {
+    if (Object.keys(servicePrices).length > 0) {
+      if (!window.confirm('Service prices already exist in the database. This will reset ALL prices to defaults. Are you sure?')) {
+        return;
+      }
+    }
+
+    try {
+      setSavingPrices(true);
+      for (const service of defaultServices) {
+        // Check if already exists
+        if (servicePrices[service.name]) {
+          await updateDoc(doc(db, 'service_prices', servicePrices[service.name].id), {
+            price: service.price,
+            priceLabel: service.priceLabel,
+            updatedAt: new Date(),
+            updatedBy: auth.currentUser?.email || 'Unknown'
+          });
+        } else {
+          await addDoc(collection(db, 'service_prices'), {
+            name: service.name,
+            category: service.category,
+            price: service.price,
+            priceLabel: service.priceLabel,
+            details: service.details,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            updatedBy: auth.currentUser?.email || 'Unknown'
+          });
+        }
+      }
+
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: 'INITIALIZE_PRICES',
+        targetType: TARGET_TYPES.PRICE,
+        targetName: 'All Services',
+        changes: null,
+        description: `Initialized ${defaultServices.length} service prices in database`
+      });
+
+      alert(`✅ ${defaultServices.length} service prices initialized successfully!`);
+    } catch (error) {
+      console.error('Error initializing prices:', error);
+      alert('Failed to initialize prices: ' + error.message);
+    } finally {
+      setSavingPrices(false);
+    }
+  };
+
+  // Format price for display (e.g., 2000 → "$2,000")
+  const formatPrice = (price) => {
+    if (price === 0) return 'Call for quote';
+    return `$${Number(price).toLocaleString()}`;
+  };
+
+  // Save a single service price
+  const handleSaveServicePrice = async (serviceName) => {
+    const editedPrice = priceFormEdits[serviceName];
+    if (editedPrice === undefined) return;
+
+    const numPrice = Number(editedPrice);
+    if (isNaN(numPrice) || numPrice < 0) {
+      alert('⚠️ Please enter a valid price (0 or greater)');
+      return;
+    }
+
+    try {
+      const existing = servicePrices[serviceName];
+      if (!existing) {
+        alert('Service not found in database. Please initialize prices first.');
+        return;
+      }
+
+      const oldPrice = existing.price;
+      const newPriceLabel = numPrice === 0 ? 'Please call for quote' : 
+        (existing.priceLabel?.startsWith('Starts') ? `Starts at $${numPrice.toLocaleString()}` : `$${numPrice.toLocaleString()}`);
+
+      await updateDoc(doc(db, 'service_prices', existing.id), {
+        price: numPrice,
+        priceLabel: newPriceLabel,
+        updatedAt: new Date(),
+        updatedBy: auth.currentUser?.email || 'Unknown'
+      });
+
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: 'UPDATE_SERVICE_PRICE',
+        targetType: TARGET_TYPES.PRICE,
+        targetName: serviceName,
+        changes: {
+          before: { price: oldPrice, priceLabel: existing.priceLabel },
+          after: { price: numPrice, priceLabel: newPriceLabel }
+        },
+        description: `Updated ${serviceName} price from ${formatPrice(oldPrice)} to ${formatPrice(numPrice)}`
+      });
+
+      // Clear the edit for this service
+      setPriceFormEdits(prev => {
+        const updated = { ...prev };
+        delete updated[serviceName];
+        return updated;
+      });
+
+      alert(`✅ ${serviceName} price updated to ${formatPrice(numPrice)}`);
+    } catch (error) {
+      console.error('Error saving price:', error);
+      alert('Failed to save price: ' + error.message);
+    }
+  };
+
+  // Save all edited prices at once
+  const handleSaveAllPrices = async () => {
+    const editedServices = Object.keys(priceFormEdits);
+    if (editedServices.length === 0) {
+      alert('No price changes to save.');
+      return;
+    }
+
+    // Validate all edits
+    for (const name of editedServices) {
+      const val = Number(priceFormEdits[name]);
+      if (isNaN(val) || val < 0) {
+        alert(`⚠️ Invalid price for "${name}". Please enter a valid number.`);
+        return;
+      }
+    }
+
+    if (!window.confirm(`Save price changes for ${editedServices.length} service(s)?`)) return;
+
+    try {
+      setSavingPrices(true);
+      const changes = [];
+
+      for (const serviceName of editedServices) {
+        const numPrice = Number(priceFormEdits[serviceName]);
+        const existing = servicePrices[serviceName];
+        if (!existing) continue;
+
+        const oldPrice = existing.price;
+        const newPriceLabel = numPrice === 0 ? 'Please call for quote' :
+          (existing.priceLabel?.startsWith('Starts') ? `Starts at $${numPrice.toLocaleString()}` : `$${numPrice.toLocaleString()}`);
+
+        await updateDoc(doc(db, 'service_prices', existing.id), {
+          price: numPrice,
+          priceLabel: newPriceLabel,
+          updatedAt: new Date(),
+          updatedBy: auth.currentUser?.email || 'Unknown'
+        });
+
+        changes.push({ name: serviceName, from: formatPrice(oldPrice), to: formatPrice(numPrice) });
+      }
+
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: 'BULK_UPDATE_PRICES',
+        targetType: TARGET_TYPES.PRICE,
+        targetName: `${changes.length} services`,
+        changes: { services: changes },
+        description: `Bulk updated prices for ${changes.length} services`
+      });
+
+      setPriceFormEdits({});
+      alert(`✅ ${changes.length} price(s) updated successfully!`);
+    } catch (error) {
+      console.error('Error bulk saving prices:', error);
+      alert('Failed to save prices: ' + error.message);
+    } finally {
+      setSavingPrices(false);
+    }
+  };
+
+  // Get services grouped by category for the price manager UI
+  const getServicesByCategory = () => {
+    const categories = {};
+    const allServices = Object.keys(servicePrices).length > 0 ? 
+      Object.values(servicePrices) : defaultServices;
+
+    allServices.forEach(service => {
+      const cat = service.category || 'Other';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(service);
+    });
+
+    return categories;
+  };
+
   // Stats calculation
   const stats = {
     total: bookings.length,
@@ -481,8 +750,8 @@ export default function AdminDashboard() {
     cancelled: bookings.filter(b => b.status === 'cancelled').length,
   };
 
-  // Service pricing map (approximate starting prices)
-  const servicePricing = {
+  // Service pricing map — uses Firestore prices if available, falls back to hardcoded defaults
+  const hardcodedPricing = {
     'Wash and Vac (Small Car)': 2000,
     'Wash and Vac (Sedan)': 2200,
     'Wash and Vac (Small SUV)': 2800,
@@ -490,6 +759,7 @@ export default function AdminDashboard() {
     'Wash and Vac (Large SUV)': 3500,
     'Wash and Vac (Small Bus)': 3500,
     'Wash and Vac (Large Bus)': 4500,
+    'Wash and Vac (Pickup)': 4000,
     'Wash and Vac (Extra Large Bus)': 5000,
     'Wash and Vac (Small Truck)': 6000,
     'Wash and Vac (Large Truck)': 7000,
@@ -508,13 +778,19 @@ export default function AdminDashboard() {
     'Leather Interior Detail': 10000,
     'Steam Cleaning Car Seat': 15000,
     'Steam Clean Sofa': 15000,
-    'Wall Cleaning': 0, // Custom quote
+    'Wall Cleaning': 0,
     'Building Roof Cleaning': 15000,
     'Driveway Cleaning': 10000,
     'Carpet Cleaning': 5000,
     'Sofa Cleaning': 10000,
     'Mattress Cleaning': 10000,
   };
+
+  // Build servicePricing from Firestore data, with hardcoded fallback
+  const servicePricing = Object.keys(hardcodedPricing).reduce((acc, name) => {
+    acc[name] = servicePrices[name]?.price ?? hardcodedPricing[name];
+    return acc;
+  }, {});
 
   // Monthly summary calculation
   const getMonthlySummary = () => {
@@ -927,6 +1203,29 @@ export default function AdminDashboard() {
                     <p className="text-xs text-gray-500 mt-1">Allow booking to start at end time</p>
                   </div>
                 </div>
+
+                {/* Live Booking Slots Preview */}
+                {workerForm.start && workerForm.end && workerForm.interval && workerForm.start < workerForm.end && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <h4 className="text-sm font-bold text-blue-800 mb-2">📋 Booking Slots Preview (what customers will see):</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {generateCustomSlots(workerForm.start, workerForm.end, workerForm.interval).map((slot, idx) => {
+                        const [h, m] = slot.split(':').map(Number);
+                        const hour12 = h % 12 === 0 ? 12 : h % 12;
+                        const ampm = h < 12 ? 'AM' : 'PM';
+                        return (
+                          <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                            {hour12}:{m.toString().padStart(2, '0')} {ampm}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-blue-600 mt-2">
+                      {generateCustomSlots(workerForm.start, workerForm.end, workerForm.interval).length} slots total — These will update on the booking page immediately after saving.
+                    </p>
+                  </div>
+                )}
+
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={editingWorker ? handleUpdateWorker : handleAddWorker}
@@ -1036,6 +1335,196 @@ export default function AdminDashboard() {
                 ))
               )}
             </div>
+          </div>
+        )}
+
+        {/* Service Pricing Toggle */}
+        <div className="mb-4 sm:mb-6">
+          <button
+            onClick={() => setShowPriceManagement(!showPriceManagement)}
+            className="w-full bg-gradient-to-r from-green-600 to-green-800 text-white rounded-2xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-all"
+          >
+            <div className="flex justify-between items-center gap-2">
+              <div className="text-left flex-1">
+                <h2 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2">💰 Service Pricing</h2>
+                <p className="text-green-200 font-bold text-xs sm:text-lg">Manage prices for all services</p>
+              </div>
+              <span className="text-2xl sm:text-3xl flex-shrink-0">{showPriceManagement ? '▼' : '▶'}</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Service Pricing Content */}
+        {showPriceManagement && (
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Manage Service Prices</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {Object.keys(servicePrices).length > 0 
+                    ? `${Object.keys(servicePrices).length} services in database` 
+                    : 'Prices not yet initialized — click "Initialize Prices" to start'}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                {Object.keys(servicePrices).length === 0 && (
+                  <button
+                    onClick={handleInitializePrices}
+                    disabled={savingPrices}
+                    className="px-3 sm:px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors text-sm sm:text-base whitespace-nowrap disabled:opacity-50"
+                  >
+                    {savingPrices ? '⏳ Saving...' : '🚀 Initialize Prices'}
+                  </button>
+                )}
+                {Object.keys(priceFormEdits).length > 0 && (
+                  <>
+                    <button
+                      onClick={handleSaveAllPrices}
+                      disabled={savingPrices}
+                      className="px-3 sm:px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base whitespace-nowrap disabled:opacity-50"
+                    >
+                      {savingPrices ? '⏳ Saving...' : `💾 Save All (${Object.keys(priceFormEdits).length} changes)`}
+                    </button>
+                    <button
+                      onClick={() => setPriceFormEdits({})}
+                      className="px-3 sm:px-4 py-2 bg-gray-400 text-white font-semibold rounded-lg hover:bg-gray-500 transition-colors text-sm sm:text-base whitespace-nowrap"
+                    >
+                      ↩️ Discard All
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={priceSearchQuery}
+                onChange={(e) => setPriceSearchQuery(e.target.value)}
+                placeholder="🔍 Search services..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 text-sm sm:text-base"
+              />
+            </div>
+
+            {/* Price Cards by Category */}
+            {Object.entries(getServicesByCategory()).map(([category, services]) => {
+              // Filter by search query
+              const filtered = services.filter(s => 
+                s.name.toLowerCase().includes(priceSearchQuery.toLowerCase())
+              );
+              if (filtered.length === 0) return null;
+
+              const categoryIcons = {
+                'Wash and Vac': '🚿',
+                'Detailing': '✨',
+                'Specialty Cleaning': '🏠'
+              };
+
+              return (
+                <div key={category} className="mb-6">
+                  <h3 className="text-lg font-bold text-gray-700 mb-3 border-b-2 border-gray-200 pb-2">
+                    {categoryIcons[category] || '📦'} {category} ({filtered.length})
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filtered.map((service) => {
+                      const currentPrice = service.price ?? 0;
+                      const editedPrice = priceFormEdits[service.name];
+                      const hasEdit = editedPrice !== undefined && Number(editedPrice) !== currentPrice;
+                      const displayPrice = editedPrice !== undefined ? editedPrice : currentPrice;
+
+                      return (
+                        <div 
+                          key={service.name} 
+                          className={`p-4 rounded-xl border-2 transition-all ${
+                            hasEdit 
+                              ? 'border-yellow-400 bg-yellow-50 shadow-md' 
+                              : 'border-gray-200 bg-gray-50 hover:border-green-300'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-semibold text-gray-800 text-sm leading-tight flex-1 mr-2">
+                              {service.name}
+                            </h4>
+                            {hasEdit && (
+                              <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
+                                Modified
+                              </span>
+                            )}
+                          </div>
+
+                          {service.details && (
+                            <p className="text-xs text-gray-500 mb-2">{service.details}</p>
+                          )}
+
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-gray-500 text-sm font-medium">$</span>
+                            <input
+                              type="number"
+                              value={displayPrice}
+                              onChange={(e) => setPriceFormEdits(prev => ({
+                                ...prev,
+                                [service.name]: e.target.value
+                              }))}
+                              className={`flex-1 p-2 border rounded-lg text-sm font-bold ${
+                                hasEdit ? 'border-yellow-400 bg-white' : 'border-gray-300'
+                              }`}
+                              min="0"
+                              step="100"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-500">
+                              {service.priceLabel || formatPrice(currentPrice)}
+                            </p>
+                            {hasEdit && (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleSaveServicePrice(service.name)}
+                                  className="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 font-semibold"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setPriceFormEdits(prev => {
+                                    const updated = { ...prev };
+                                    delete updated[service.name];
+                                    return updated;
+                                  })}
+                                  className="text-xs px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 font-semibold"
+                                >
+                                  Undo
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Show price change preview */}
+                          {hasEdit && (
+                            <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
+                              <span className="text-gray-500 line-through">{formatPrice(currentPrice)}</span>
+                              <span className="mx-1">→</span>
+                              <span className="text-green-700 font-bold">{formatPrice(Number(editedPrice))}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* No results message */}
+            {priceSearchQuery && Object.values(getServicesByCategory()).every(services => 
+              services.filter(s => s.name.toLowerCase().includes(priceSearchQuery.toLowerCase())).length === 0
+            ) && (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-4xl mb-2">🔍</p>
+                <p>No services found matching "{priceSearchQuery}"</p>
+              </div>
+            )}
           </div>
         )}
 
