@@ -33,6 +33,9 @@ export default function AdminDashboard() {
   const [priceFormEdits, setPriceFormEdits] = useState({});
   const [savingPrices, setSavingPrices] = useState(false);
   const [priceSearchQuery, setPriceSearchQuery] = useState('');
+  const [showAddServiceForm, setShowAddServiceForm] = useState(false);
+  const [newServiceForm, setNewServiceForm] = useState({ name: '', category: 'Wash and Vac', price: '', startsAt: false });
+  const [removingService, setRemovingService] = useState(null);
 
   // Worker management states
   const [workers, setWorkers] = useState([]);
@@ -534,7 +537,6 @@ export default function AdminDashboard() {
     { name: 'Wash and Vac (Tracker & Backhoe)', category: 'Wash and Vac', price: 15000, priceLabel: '$15,000', details: '' },
     // Detailing
     { name: 'Seat Only Detail', category: 'Detailing', price: 15000, priceLabel: 'Starts at $15,000', details: '' },
-    { name: 'Full Interior Detail', category: 'Detailing', price: 25000, priceLabel: 'Starts at $25,000', details: 'Includes seats, roof, and doors' },
     { name: 'Full Interior Detail (with seat removal)', category: 'Detailing', price: 35000, priceLabel: 'Starts at $35,000', details: '' },
     { name: 'Headlight Restoration', category: 'Detailing', price: 3000, priceLabel: 'Starts at $3,000', details: '' },
     { name: 'Plastic Restoration', category: 'Detailing', price: 3000, priceLabel: 'Starts at $3,000', details: '' },
@@ -741,6 +743,78 @@ export default function AdminDashboard() {
     return categories;
   };
 
+  // Add a new service to Firestore
+  const handleAddService = async () => {
+    const name = newServiceForm.name.trim();
+    if (!name) { alert('⚠️ Please enter a service name.'); return; }
+    if (servicePrices[name]) { alert(`⚠️ A service named "${name}" already exists.`); return; }
+    const numPrice = Number(newServiceForm.price);
+    if (isNaN(numPrice) || numPrice < 0) { alert('⚠️ Please enter a valid price.'); return; }
+
+    const priceLabel = numPrice === 0 
+      ? 'Please call for quote' 
+      : (newServiceForm.startsAt ? `Starts at $${numPrice.toLocaleString()}` : `$${numPrice.toLocaleString()}`);
+
+    try {
+      setSavingPrices(true);
+      await addDoc(collection(db, 'service_prices'), {
+        name,
+        category: newServiceForm.category,
+        price: numPrice,
+        priceLabel,
+        details: '',
+        createdAt: new Date(),
+        createdBy: auth.currentUser?.email || 'Unknown'
+      });
+
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: 'ADD_SERVICE',
+        targetType: TARGET_TYPES.PRICE,
+        targetName: name,
+        changes: { price: numPrice, priceLabel, category: newServiceForm.category },
+        description: `Added new service: ${name} (${priceLabel})`
+      });
+
+      setNewServiceForm({ name: '', category: 'Wash and Vac', price: '', startsAt: false });
+      setShowAddServiceForm(false);
+      alert(`✅ "${name}" added successfully!`);
+    } catch (error) {
+      console.error('Error adding service:', error);
+      alert('Failed to add service: ' + error.message);
+    } finally {
+      setSavingPrices(false);
+    }
+  };
+
+  // Remove a service from Firestore
+  const handleRemoveService = async (serviceName) => {
+    const service = servicePrices[serviceName];
+    if (!service) return;
+    if (!window.confirm(`Are you sure you want to permanently remove "${serviceName}"? This will also remove it from the customer booking form.`)) return;
+
+    try {
+      setRemovingService(serviceName);
+      await deleteDoc(doc(db, 'service_prices', service.id));
+
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: 'REMOVE_SERVICE',
+        targetType: TARGET_TYPES.PRICE,
+        targetName: serviceName,
+        changes: { price: service.price, priceLabel: service.priceLabel, category: service.category },
+        description: `Removed service: ${serviceName}`
+      });
+
+      alert(`✅ "${serviceName}" removed successfully.`);
+    } catch (error) {
+      console.error('Error removing service:', error);
+      alert('Failed to remove service: ' + error.message);
+    } finally {
+      setRemovingService(null);
+    }
+  };
+
   // Stats calculation
   const stats = {
     total: bookings.length,
@@ -768,7 +842,6 @@ export default function AdminDashboard() {
     'Wash and Vac (Dumper Truck)': 13000,
     'Wash and Vac (Tracker & Backhoe)': 15000,
     'Seat Only Detail': 15000,
-    'Full Interior Detail': 25000,
     'Full Interior Detail (with seat removal)': 35000,
     'Headlight Restoration': 3000,
     'Plastic Restoration': 3000,
@@ -1376,6 +1449,14 @@ export default function AdminDashboard() {
                     {savingPrices ? '⏳ Saving...' : '🚀 Initialize Prices'}
                   </button>
                 )}
+                {Object.keys(servicePrices).length > 0 && (
+                  <button
+                    onClick={() => { setShowAddServiceForm(!showAddServiceForm); setNewServiceForm({ name: '', category: 'Wash and Vac', price: '', startsAt: false }); }}
+                    className="px-3 sm:px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base whitespace-nowrap"
+                  >
+                    {showAddServiceForm ? '✖ Cancel' : '➕ Add Service'}
+                  </button>
+                )}
                 {Object.keys(priceFormEdits).length > 0 && (
                   <>
                     <button
@@ -1395,6 +1476,72 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
+
+            {/* Add New Service Form */}
+            {showAddServiceForm && (
+              <div className="mb-5 p-4 bg-purple-50 border-2 border-purple-200 rounded-xl">
+                <h3 className="text-base font-bold text-purple-800 mb-3">➕ Add New Service</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Service Name *</label>
+                    <input
+                      type="text"
+                      value={newServiceForm.name}
+                      onChange={(e) => setNewServiceForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g. Ceramic Coating"
+                      className="w-full p-2 border border-purple-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Category *</label>
+                    <select
+                      value={newServiceForm.category}
+                      onChange={(e) => setNewServiceForm(prev => ({ ...prev, category: e.target.value }))}
+                      className="w-full p-2 border border-purple-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400"
+                    >
+                      <option value="Wash and Vac">Wash and Vac</option>
+                      <option value="Detailing">Detailing</option>
+                      <option value="Specialty Cleaning">Specialty Cleaning</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Price (JMD) *</label>
+                    <input
+                      type="number"
+                      value={newServiceForm.price}
+                      onChange={(e) => setNewServiceForm(prev => ({ ...prev, price: e.target.value }))}
+                      placeholder="e.g. 5000"
+                      className="w-full p-2 border border-purple-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400"
+                      min="0"
+                      step="100"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-5">
+                    <input
+                      type="checkbox"
+                      id="startsAt"
+                      checked={newServiceForm.startsAt}
+                      onChange={(e) => setNewServiceForm(prev => ({ ...prev, startsAt: e.target.checked }))}
+                      className="w-4 h-4 accent-purple-600"
+                    />
+                    <label htmlFor="startsAt" className="text-sm text-gray-700 font-medium">Show as "Starts at" price</label>
+                  </div>
+                </div>
+                {newServiceForm.name && newServiceForm.price && (
+                  <p className="text-xs text-purple-700 mb-3 font-medium">
+                    Preview: <strong>{newServiceForm.name}</strong> — {newServiceForm.startsAt ? `Starts at $${Number(newServiceForm.price).toLocaleString()}` : `$${Number(newServiceForm.price).toLocaleString()}`}
+                  </p>
+                )}
+                <button
+                  onClick={handleAddService}
+                  disabled={savingPrices || !newServiceForm.name.trim() || !newServiceForm.price}
+                  className="px-4 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingPrices ? '⏳ Adding...' : '✅ Add Service'}
+                </button>
+              </div>
+            )}
 
             {/* Search Bar */}
             <div className="mb-4">
@@ -1446,11 +1593,21 @@ export default function AdminDashboard() {
                             <h4 className="font-semibold text-gray-800 text-sm leading-tight flex-1 mr-2">
                               {service.name}
                             </h4>
-                            {hasEdit && (
-                              <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
-                                Modified
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {hasEdit && (
+                                <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
+                                  Modified
+                                </span>
+                              )}
+                              <button
+                                onClick={() => handleRemoveService(service.name)}
+                                disabled={removingService === service.name}
+                                title="Remove this service"
+                                className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded hover:bg-red-500 hover:text-white transition-colors font-bold disabled:opacity-50"
+                              >
+                                {removingService === service.name ? '⏳' : '🗑'}
+                              </button>
+                            </div>
                           </div>
 
                           {service.details && (

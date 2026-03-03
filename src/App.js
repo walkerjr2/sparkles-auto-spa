@@ -1019,7 +1019,6 @@ const App = () => {
       category: 'Detailing',
       items: [
         { id: 14, name: 'Seat Only Detail', price: getServicePrice('Seat Only Detail', 'Starts at $15,000'), details: [] },
-        { id: 15, name: 'Full Interior Detail', price: getServicePrice('Full Interior Detail', 'Starts at $25,000'), details: ['Includes seats, roof, and doors'] },
         { id: 16, name: 'Full Interior Detail (with seat removal)', price: getServicePrice('Full Interior Detail (with seat removal)', 'Starts at $35,000'), details: [] },
         { id: 17, name: 'Headlight Restoration', price: getServicePrice('Headlight Restoration', 'Starts at $3,000'), details: [] },
         { id: 18, name: 'Plastic Restoration', price: getServicePrice('Plastic Restoration', 'Starts at $3,000'), details: [] },
@@ -1110,7 +1109,6 @@ const App = () => {
     // Check if the selected service is a detailing service
     const detailingServices = [
       'Seat Only Detail',
-      'Full Interior Detail',
       'Full Interior Detail (with seat removal)',
       'Headlight Restoration',
       'Plastic Restoration',
@@ -1447,7 +1445,6 @@ const App = () => {
             'Wash and Vac (Tracker & Backhoe)': require('./assets/backhoe.png'),
             // Detailing Services
             'Seat Only Detail': require('./assets/seat only detail.png'),
-            'Full Interior Detail': require('./assets/full interior detail.png'),
             'Full Interior Detail (with seat removal)': require('./assets/full interior detail( with seat removal) .png'),
             'Headlight Restoration': require('./assets/headlight restoration.jpg'),
             'Plastic Restoration': require('./assets/plastic restoration.jpg'),
