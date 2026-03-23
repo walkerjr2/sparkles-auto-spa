@@ -49,7 +49,7 @@ export default function AdminDashboard() {
     start: '06:30',
     end: '14:00',
     interval: 90,
-    dayOff: 1,
+    dayOff: [1],
     overrides: null,
     lastSlotInclusive: false,
     customSlots: null,
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
         ...workerForm,
         customSlots: customSlots,
         interval: Number(workerForm.interval),
-        dayOff: Number(workerForm.dayOff),
+        dayOff: workerForm.dayOff,
         order: Number(workerForm.order)
       };
       
@@ -316,7 +316,7 @@ export default function AdminDashboard() {
         ...workerForm,
         customSlots: customSlots,
         interval: Number(workerForm.interval),
-        dayOff: Number(workerForm.dayOff),
+        dayOff: workerForm.dayOff,
         order: Number(workerForm.order)
       };
       
@@ -450,7 +450,7 @@ export default function AdminDashboard() {
       start: worker.start,
       end: worker.end,
       interval: worker.interval,
-      dayOff: worker.dayOff,
+      dayOff: Array.isArray(worker.dayOff) ? worker.dayOff : [worker.dayOff],
       overrides: worker.overrides || null,
       lastSlotInclusive: worker.lastSlotInclusive || false,
       customSlots: worker.customSlots || null,
@@ -470,7 +470,7 @@ export default function AdminDashboard() {
       start: '06:30',
       end: '14:00',
       interval: 90,
-      dayOff: 1,
+      dayOff: [1],
       overrides: null,
       lastSlotInclusive: false,
       customSlots: null,
@@ -1225,20 +1225,26 @@ export default function AdminDashboard() {
                     <p className="text-xs text-gray-500 mt-1">Booking slots will be created every X minutes</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Day Off *</label>
-                    <select
-                      value={workerForm.dayOff}
-                      onChange={(e) => setWorkerForm({ ...workerForm, dayOff: Number(e.target.value) })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                    >
-                      <option value={0}>Sunday</option>
-                      <option value={1}>Monday</option>
-                      <option value={2}>Tuesday</option>
-                      <option value={3}>Wednesday</option>
-                      <option value={4}>Thursday</option>
-                      <option value={5}>Friday</option>
-                      <option value={6}>Saturday</option>
-                    </select>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Days Off *</label>
+                    <div className="grid grid-cols-2 gap-2 p-3 border border-gray-300 rounded-lg">
+                      {[{value: 0, label: 'Sunday'}, {value: 1, label: 'Monday'}, {value: 2, label: 'Tuesday'}, {value: 3, label: 'Wednesday'}, {value: 4, label: 'Thursday'}, {value: 5, label: 'Friday'}, {value: 6, label: 'Saturday'}].map(day => (
+                        <label key={day.value} className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={(workerForm.dayOff || []).includes(day.value)}
+                            onChange={(e) => {
+                              const current = workerForm.dayOff || [];
+                              const updated = e.target.checked
+                                ? [...current, day.value].sort((a, b) => a - b)
+                                : current.filter(d => d !== day.value);
+                              setWorkerForm({ ...workerForm, dayOff: updated });
+                            }}
+                            className="w-4 h-4 text-purple-600 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{day.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Display Order</label>
@@ -1377,9 +1383,11 @@ export default function AdminDashboard() {
                               <p className="text-gray-800">{worker.interval} min</p>
                             </div>
                             <div>
-                              <span className="text-gray-500 font-semibold">Day Off:</span>
+                              <span className="text-gray-500 font-semibold">Days Off:</span>
                               <p className="text-gray-800">
-                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][worker.dayOff]}
+                                {(Array.isArray(worker.dayOff) ? worker.dayOff : [worker.dayOff])
+                                  .map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d])
+                                  .join(', ') || 'None'}
                               </p>
                             </div>
                             <div>

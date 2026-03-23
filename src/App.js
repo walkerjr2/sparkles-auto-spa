@@ -1123,7 +1123,8 @@ const App = () => {
 
     workerSchedules.forEach(worker => {
       // Skip if day off or hard rule: Nick is off on Mondays (1)
-      if (worker.dayOff === dayOfWeek || (worker.name === 'Nick' && dayOfWeek === 1)) return;
+      const isWorkerDayOff = Array.isArray(worker.dayOff) ? worker.dayOff.includes(dayOfWeek) : worker.dayOff === dayOfWeek;
+      if (isWorkerDayOff || (worker.name === 'Nick' && dayOfWeek === 1)) return;
       
       // Only Nick can do detailing services
       if (isDetailingService && worker.name !== 'Nick') {
