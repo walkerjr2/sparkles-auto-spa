@@ -1058,6 +1058,7 @@ const App = () => {
       overrides: w.overrides || null,
       lastSlotInclusive: w.lastSlotInclusive || false,
       customSlots: w.customSlots || null,
+      blockedDates: w.blockedDates || [],
     }));
 
   // Dummy data for worker schedules (for demonstration)
@@ -1122,6 +1123,9 @@ const App = () => {
     const isDetailingService = detailingServices.includes(bookingDetails.service);
 
     workerSchedules.forEach(worker => {
+      // Skip if this date is assigned to a full day job by admin (supports both string[] and {date,service}[] formats)
+      if (worker.blockedDates?.some(e => (typeof e === 'string' ? e : e.date) === dateStr)) return;
+
       // Skip if day off or hard rule: Nick is off on Mondays (1)
       const isWorkerDayOff = Array.isArray(worker.dayOff) ? worker.dayOff.includes(dayOfWeek) : worker.dayOff === dayOfWeek;
       if (isWorkerDayOff || (worker.name === 'Nick' && dayOfWeek === 1)) return;

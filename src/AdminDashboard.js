@@ -42,6 +42,12 @@ export default function AdminDashboard() {
   const [showWorkerManagement, setShowWorkerManagement] = useState(false);
   const [showWorkerForm, setShowWorkerForm] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
+
+  // Full-day assignment states
+  const [showBlockPanel, setShowBlockPanel] = useState(null); // workerId or null
+  const [blockDateInput, setBlockDateInput] = useState(() => new Date().toISOString().slice(0, 10));
+  const [blockServiceInput, setBlockServiceInput] = useState('');
+  const [blockingDay, setBlockingDay] = useState(false);
   const [workerForm, setWorkerForm] = useState({
     name: '',
     bio: '',
@@ -477,6 +483,58 @@ export default function AdminDashboard() {
       active: true,
       order: workers.length
     });
+  };
+
+  // Helper: extract date/service from a blockedDates entry (supports legacy plain strings)
+  const getEntryDate = (entry) => (typeof entry === 'string' ? entry : entry.date);
+  const getEntryService = (entry) => (typeof entry === 'string' ? '' : (entry.service || ''));
+
+  const handleBlockDay = async (worker, dateStr) => {
+    if (!dateStr) { alert('Please select a date.'); return; }
+    const blockedDates = worker.blockedDates || [];
+    if (blockedDates.some(e => getEntryDate(e) === dateStr)) {
+      alert(`${worker.name} is already assigned a full day job on ${dateStr}.`);
+      return;
+    }
+    const service = blockServiceInput.trim() || 'Full Day Job';
+    const newEntry = { date: dateStr, service };
+    const updated = [...blockedDates, newEntry].sort((a, b) => getEntryDate(a).localeCompare(getEntryDate(b)));
+    try {
+      setBlockingDay(true);
+      await updateDoc(doc(db, 'workers', worker.id), { blockedDates: updated });
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: ACTIVITY_TYPES.UPDATE_WORKER,
+        targetType: TARGET_TYPES.WORKER,
+        targetName: worker.name,
+        changes: { before: { blockedDates }, after: { blockedDates: updated } },
+        description: `Assigned ${worker.name} to full day job (${service}) on ${dateStr} — no customer slots available`
+      });
+      setBlockServiceInput('');
+    } catch (error) {
+      console.error('Error assigning full day job:', error);
+      alert('Failed to assign full day job: ' + error.message);
+    } finally {
+      setBlockingDay(false);
+    }
+  };
+
+  const handleUnblockDay = async (worker, dateStr) => {
+    const blockedDates = (worker.blockedDates || []).filter(e => getEntryDate(e) !== dateStr);
+    try {
+      await updateDoc(doc(db, 'workers', worker.id), { blockedDates });
+      await logActivity({
+        userEmail: auth.currentUser?.email || 'Unknown',
+        action: ACTIVITY_TYPES.UPDATE_WORKER,
+        targetType: TARGET_TYPES.WORKER,
+        targetName: worker.name,
+        changes: { before: { blockedDates: worker.blockedDates || [] }, after: { blockedDates } },
+        description: `Cancelled full day assignment for ${worker.name} on ${dateStr} — slots restored`
+      });
+    } catch (error) {
+      console.error('Error cancelling assignment:', error);
+      alert('Failed to cancel assignment: ' + error.message);
+    }
   };
 
   const handleMigrateWorkers = async () => {
@@ -1411,6 +1469,135 @@ export default function AdminDashboard() {
                           🗑️ Delete
                         </button>
                       </div>
+
+                      {/* Full Day Job Toggle */}
+                      <button
+                        onClick={() => {
+                          setShowBlockPanel(showBlockPanel === worker.id ? null : worker.id);
+                          setBlockDateInput(new Date().toISOString().slice(0, 10));
+                          setBlockServiceInput('');
+                        }}
+                        className={`w-full mt-2 px-3 sm:px-4 py-2 font-semibold rounded-lg transition-colors text-sm ${
+                          showBlockPanel === worker.id
+                            ? 'bg-orange-600 text-white hover:bg-orange-700'
+                            : 'bg-orange-100 text-orange-700 border border-orange-300 hover:bg-orange-200'
+                        }`}
+                      >
+                        📋 {showBlockPanel === worker.id ? '✕ Close' : 'Full Day Job Assignments'}
+                        {(worker.blockedDates || []).length > 0 && (
+                          <span className="ml-2 bg-orange-500 text-white text-xs rounded-full px-2 py-0.5">
+                            {(worker.blockedDates || []).length} assigned
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Full Day Job Panel */}
+                      {showBlockPanel === worker.id && (
+                        <div className="mt-3 p-4 bg-orange-50 border-2 border-orange-200 rounded-xl">
+                          <h4 className="font-bold text-orange-800 text-sm mb-3">
+                            📋 Assign {worker.name} to a Full Day Job
+                          </h4>
+
+                          {/* Service / job input */}
+                          <div className="mb-3">
+                            <label className="block text-xs font-semibold text-orange-800 mb-1">
+                              Job / Service occupying this day
+                            </label>
+                            <input
+                              type="text"
+                              list={`service-list-${worker.id}`}
+                              value={blockServiceInput}
+                              onChange={e => setBlockServiceInput(e.target.value)}
+                              placeholder="e.g. Full Interior Detail, Buff and Polish…"
+                              className="w-full px-3 py-2 rounded-lg text-sm border border-orange-300 focus:ring-2 focus:ring-orange-400 bg-white"
+                            />
+                            <datalist id={`service-list-${worker.id}`}>
+                              {Object.keys(servicePrices).sort().map(name => (
+                                <option key={name} value={name} />
+                              ))}
+                            </datalist>
+                          </div>
+
+                          {/* Quick select + date picker */}
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {(() => {
+                              const today = new Date().toISOString().slice(0, 10);
+                              const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+                              return (
+                                <>
+                                  <button
+                                    onClick={() => setBlockDateInput(today)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                                      blockDateInput === today
+                                        ? 'bg-orange-500 text-white border-orange-500'
+                                        : 'bg-white text-orange-700 border-orange-300 hover:bg-orange-100'
+                                    }`}
+                                  >
+                                    Today ({today})
+                                  </button>
+                                  <button
+                                    onClick={() => setBlockDateInput(tomorrow)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                                      blockDateInput === tomorrow
+                                        ? 'bg-orange-500 text-white border-orange-500'
+                                        : 'bg-white text-orange-700 border-orange-300 hover:bg-orange-100'
+                                    }`}
+                                  >
+                                    Tomorrow ({tomorrow})
+                                  </button>
+                                </>
+                              );
+                            })()}
+                            <input
+                              type="date"
+                              value={blockDateInput}
+                              onChange={e => setBlockDateInput(e.target.value)}
+                              className="flex-1 min-w-0 px-3 py-1.5 rounded-lg text-xs border border-orange-300 focus:ring-2 focus:ring-orange-400 bg-white"
+                            />
+                          </div>
+
+                          <button
+                            onClick={() => handleBlockDay(worker, blockDateInput)}
+                            disabled={blockingDay || !blockDateInput}
+                            className="w-full py-2 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {blockingDay ? '⏳ Assigning...' : `📋 Assign ${worker.name} — ${blockDateInput}`}
+                          </button>
+
+                          {/* Assigned days list */}
+                          {(worker.blockedDates || []).length > 0 && (
+                            <div className="mt-4">
+                              <p className="text-xs font-bold text-orange-800 mb-2">Full Day Assignments:</p>
+                              <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                                {[...(worker.blockedDates || [])]
+                                  .sort((a, b) => getEntryDate(a).localeCompare(getEntryDate(b)))
+                                  .map(entry => {
+                                    const date = getEntryDate(entry);
+                                    const svc = getEntryService(entry);
+                                    return (
+                                      <div key={date} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-orange-200 gap-2">
+                                        <div className="min-w-0">
+                                          <p className="text-sm text-gray-800 font-semibold">{date}</p>
+                                          {svc && <p className="text-xs text-orange-600 truncate">{svc}</p>}
+                                        </div>
+                                        <button
+                                          onClick={() => handleUnblockDay(worker, date)}
+                                          className="text-xs text-red-500 font-bold hover:text-red-700 ml-1 whitespace-nowrap flex-shrink-0"
+                                        >
+                                          ✕ Cancel
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            </div>
+                          )}
+
+                          {(worker.blockedDates || []).length === 0 && (
+                            <p className="mt-3 text-xs text-orange-600 text-center">No full day jobs assigned yet.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
