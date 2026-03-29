@@ -11,7 +11,7 @@ import AdminActivityLog from './AdminActivityLog';
 import { useRef } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot, doc, updateDoc, runTransaction, getDoc } from 'firebase/firestore';
 import emailjs from '@emailjs/browser';
 import Autocomplete from 'react-google-autocomplete';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
@@ -626,6 +626,46 @@ const App = () => {
         bookingData: bookingDetails
       }).catch(err => console.log('Logging error:', err));
       
+      // Extract worker name from the selected time slot string "10:00 AM (Nick)"
+      const workerMatch = bookingDetails.time.match(/\(([^)]+)\)$/);
+      const workerName = workerMatch ? workerMatch[1] : 'Unknown';
+
+      // Re-check availability at submit time to prevent race conditions
+      // (two customers viewing the same slot simultaneously)
+      const selectedTimeSlot = bookingDetails.time; // e.g. "10:00 AM (Nick)"
+      const conflictSnap = await getDocs(
+        query(
+          collection(db, 'bookings'),
+          where('date', '==', bookingDetails.date),
+          where('time', '==', selectedTimeSlot)
+        )
+      );
+      const activeConflict = conflictSnap.docs.some(d => {
+        const s = d.data().status;
+        return !s || s === 'pending' || s === 'confirmed' || s === 'completed';
+      });
+      if (activeConflict) {
+        setLoading(false);
+        alert('Sorry, that time slot was just booked by someone else. Please select a different time.');
+        return;
+      }
+
+      // Also re-check worker blockedDates from Firestore to catch admin blocks
+      // that may not have propagated to the local workers state yet
+      const workersSnap = await getDocs(collection(db, 'workers'));
+      const workerBlocked = workersSnap.docs.some(d => {
+        const data = d.data();
+        if (data.name !== workerName) return false;
+        return (data.blockedDates || []).some(e =>
+          (typeof e === 'string' ? e : e.date) === bookingDetails.date
+        );
+      });
+      if (workerBlocked) {
+        setLoading(false);
+        alert('Sorry, that worker is fully booked on the selected date. Please choose a different date or time.');
+        return;
+      }
+
       // Save booking to Firestore with real-time sync
       const bookingData = {
         service: bookingDetails.service,
@@ -635,6 +675,7 @@ const App = () => {
         lng: bookingDetails.lng,
         date: bookingDetails.date,
         time: bookingDetails.time,
+        worker: workerName,
         name: bookingDetails.name,
         email: bookingDetails.email,
         phone: bookingDetails.phone,
@@ -1149,7 +1190,8 @@ const App = () => {
       const pushSlot = (slotStartMinutes) => {
         const timeString = toTimeString(slotStartMinutes);
         const isBooked = bookedSlots.some(booking => {
-          const isActiveStatus = !booking.status || booking.status === 'pending' || booking.status === 'confirmed';
+          // A slot is occupied by any non-cancelled booking (including completed)
+          const isActiveStatus = !booking.status || booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'completed';
           // Match exact time format: "10:00 AM (Nick)"
           const bookingTimeString = `${timeString} (${worker.name})`;
           return booking.date === dateStr && booking.time === bookingTimeString && isActiveStatus;
