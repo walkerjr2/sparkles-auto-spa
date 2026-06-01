@@ -8,12 +8,13 @@ export default function BookingForensics() {
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [authorized, setAuthorized] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   
   // Filters
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterDate, setFilterDate] = useState('today');
+  const [filterDate, setFilterDate] = useState('all');
   const [searchEmail, setSearchEmail] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
   const [logLimit, setLogLimit] = useState(100);
@@ -68,16 +69,24 @@ export default function BookingForensics() {
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const logsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date(doc.data().timestampISO)
-      }));
+      const logsData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        let timestamp;
+        if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+          timestamp = data.timestamp.toDate();
+        } else if (data.timestampISO) {
+          timestamp = new Date(data.timestampISO);
+        } else {
+          timestamp = new Date();
+        }
+        return { id: doc.id, ...data, timestamp };
+      });
       setLogs(logsData);
       setFilteredLogs(logsData);
       setLoading(false);
     }, (error) => {
       console.error('Error fetching logs:', error);
+      setFetchError(error.message || 'Unknown error');
       setLoading(false);
     });
 
@@ -282,7 +291,7 @@ export default function BookingForensics() {
 
   const clearAllFilters = () => {
     setFilterStatus('all');
-    setFilterDate('today');
+    setFilterDate('all');
     setFilterDevice('all');
     setFilterBrowser('all');
     setFilterService('all');
@@ -423,6 +432,14 @@ export default function BookingForensics() {
             </div>
           </div>
         </div>
+
+        {/* Error banner */}
+        {fetchError && (
+          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mb-4">
+            <p className="text-sm font-semibold text-red-800">Failed to load logs: {fetchError}</p>
+            <p className="text-xs text-red-600 mt-1">Check that you are signed in as the super admin via customer login.</p>
+          </div>
+        )}
 
         {/* FEATURE 1: CONVERSION FUNNEL VISUALIZATION */}
         <div className="bg-white rounded-lg shadow-xl p-4 md:p-6 mb-4 md:mb-6">
@@ -706,8 +723,13 @@ export default function BookingForensics() {
               <tbody className="divide-y divide-gray-200">
                 {filteredLogs.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
-                      No booking attempts found matching filters
+                    <td colSpan="9" className="px-4 py-12 text-center">
+                      <div className="text-4xl mb-3">📭</div>
+                      <p className="text-gray-700 font-semibold mb-1">No booking attempts logged yet</p>
+                      <p className="text-gray-500 text-sm max-w-md mx-auto">
+                        Logs are recorded each time someone tries to submit a booking.
+                        They will appear here automatically — try submitting a test booking on the site.
+                      </p>
                     </td>
                   </tr>
                 ) : (

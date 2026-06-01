@@ -1,0 +1,16 @@
+{
+  "projects": {},
+  "targets": {
+    "sparklesautospa-41f11": {
+      "hosting": {
+        "sparklesautospajm": [
+          "sparklesautospajm"
+        ],
+        "default": [
+          "sparklesautospa-41f11"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

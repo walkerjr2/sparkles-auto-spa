@@ -2,11 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Bookings collection - Allow anyone to create bookings (for walk-in customers)
-    // Only authenticated users or super admin can read/update/delete
+    // Bookings collection - Anyone can create (walk-in customers) and read (slot availability checks)
     match /bookings/{bookingId} {
-      allow create: if true; // Anyone can create a booking
-      allow read, update, delete: if request.auth != null;
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if request.auth != null;
     }
     
     // Workers collection - Allow everyone to read, authenticated users to write

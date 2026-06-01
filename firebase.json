@@ -4,6 +4,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
+    "target": "sparklesautospajm",
     "public": "build",
     "ignore": [
       "firebase.json",

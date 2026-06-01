@@ -633,21 +633,25 @@ const App = () => {
       // Re-check availability at submit time to prevent race conditions
       // (two customers viewing the same slot simultaneously)
       const selectedTimeSlot = bookingDetails.time; // e.g. "10:00 AM (Nick)"
-      const conflictSnap = await getDocs(
-        query(
-          collection(db, 'bookings'),
-          where('date', '==', bookingDetails.date),
-          where('time', '==', selectedTimeSlot)
-        )
-      );
-      const activeConflict = conflictSnap.docs.some(d => {
-        const s = d.data().status;
-        return !s || s === 'pending' || s === 'confirmed' || s === 'completed';
-      });
-      if (activeConflict) {
-        setLoading(false);
-        alert('Sorry, that time slot was just booked by someone else. Please select a different time.');
-        return;
+      try {
+        const conflictSnap = await getDocs(
+          query(
+            collection(db, 'bookings'),
+            where('date', '==', bookingDetails.date),
+            where('time', '==', selectedTimeSlot)
+          )
+        );
+        const activeConflict = conflictSnap.docs.some(d => {
+          const s = d.data().status;
+          return !s || s === 'pending' || s === 'confirmed' || s === 'completed';
+        });
+        if (activeConflict) {
+          setLoading(false);
+          alert('Sorry, that time slot was just booked by someone else. Please select a different time.');
+          return;
+        }
+      } catch (conflictErr) {
+        console.warn('Could not verify slot conflicts, proceeding with booking:', conflictErr.message);
       }
 
       // Also re-check worker blockedDates from Firestore to catch admin blocks
